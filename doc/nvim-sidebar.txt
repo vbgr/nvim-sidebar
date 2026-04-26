@@ -1,0 +1,58 @@
+*nvim-sidebar.txt*                              Sidebar plugin for Neovim
+
+==============================================================================
+CONTENTS                                                     *nvim-sidebar*
+
+1. Setup                                      |nvim-sidebar-setup|
+2. Commands                                   |nvim-sidebar-commands|
+
+==============================================================================
+SETUP                                                   *nvim-sidebar-setup*
+
+Use the Lua API to configure nvim-sidebar:
+>
+  require("nvim-sidebar").setup({
+    width = 30,
+    side = "left",
+    sources = { "files", "buffers" },
+    default_source = "files",
+  })
+<
+
+Default options:
+>
+  {
+    width = 30,
+    side = "left",
+    sources = { "files", "buffers" },
+    default_source = "files",
+  }
+<
+
+==============================================================================
+COMMANDS                                             *nvim-sidebar-commands*
+
+                                                        *:NvimSidebar*
+:NvimSidebar [buffers|files]
+        Open the sidebar window with the selected source.
+
+                                                        *:NvimSidebarToggle*
+:NvimSidebarToggle [buffers|files]
+        Toggle the sidebar window.
+
+                                                        *:NvimSidebarRefresh*
+:NvimSidebarRefresh
+        Refresh visible sidebar views.
+
+                                                        *:NvimSidebarLocate*
+:NvimSidebarLocate [buffers|files]
+        Open the selected source and move the cursor to the current editor
+        file or buffer. Filesystem locate expands parent directories.
+
+                                                        *:NvimSidebarTree*
+:NvimSidebarTree
+        Open the filesystem tree in the current window as a full-width scratch
+        buffer.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
