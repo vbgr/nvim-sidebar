@@ -1,10 +1,6 @@
 local M = {}
 
 function M.setup()
-  vim.api.nvim_set_hl(0, "NvimSidebarCurrent", {
-    link = "CursorLine",
-    default = true,
-  })
   vim.api.nvim_set_hl(0, "NvimSidebarDirectory", {
     link = "Directory",
     default = true,

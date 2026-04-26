@@ -1,7 +1,7 @@
 local M = {}
 
 M.defaults = {
-  width = 30,
+  width = 50,
   side = "left",
   default_source = "files",
   sources = {
@@ -39,8 +39,12 @@ M.defaults = {
   tree = {
     indent_width = 2,
     indent_markers = false,
-    ignored = {
-      ".git",
+    exclude_patterns = {
+      "^%.git$",
+      "^%.DS_Store$",
+      "%.pyc$",
+      "^__pycache__$",
+      "^node_modules$",
     },
     directory_size = "--",
     directory_type = "Folder",
@@ -64,6 +68,28 @@ local valid_sources = {
   files = true,
 }
 
+local function validate_exclude_patterns(patterns)
+  if type(patterns) ~= "table" then
+    error("nvim-sidebar: tree.exclude_patterns must be a list of Lua pattern strings", 3)
+  end
+
+  for key, pattern in pairs(patterns) do
+    if type(key) ~= "number" or key < 1 or key % 1 ~= 0 then
+      error("nvim-sidebar: tree.exclude_patterns must be a list", 3)
+    end
+
+    if type(pattern) ~= "string" then
+      error("nvim-sidebar: tree.exclude_patterns entries must be strings", 3)
+    end
+
+    local ok = pcall(string.find, "", pattern)
+
+    if not ok then
+      error("nvim-sidebar: invalid tree.exclude_patterns Lua pattern '" .. pattern .. "'", 3)
+    end
+  end
+end
+
 local function validate_options(opts)
   if opts.side ~= "left" and opts.side ~= "right" then
     error("nvim-sidebar: side must be 'left' or 'right'", 3)
@@ -82,6 +108,8 @@ local function validate_options(opts)
   if not valid_sources[opts.default_source] then
     error("nvim-sidebar: unknown default_source '" .. tostring(opts.default_source) .. "'", 3)
   end
+
+  validate_exclude_patterns(opts.tree.exclude_patterns)
 end
 
 function M.setup(opts)

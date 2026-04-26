@@ -24,7 +24,6 @@ end
 
 local function listed_buffers()
   local buffers = {}
-  local current = state.previous_buffer() or vim.api.nvim_get_current_buf()
 
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].buflisted then
@@ -40,7 +39,6 @@ local function listed_buffers()
           bufnr = bufnr,
           name = name,
           path = buffer_path,
-          current = bufnr == current,
           modified = vim.bo[bufnr].modified,
         })
       end
@@ -58,8 +56,7 @@ function M.render()
   for _, item in ipairs(listed_buffers()) do
     local icon = devicons.file(item.path, item.name)
     local modified = item.modified and config.options.icons.modified or " "
-    local current = item.current and ">" or " "
-    local line = string.format("%s %d %s%s %s", current, item.bufnr, icon, modified, item.name)
+    local line = string.format("%d %s%s %s", item.bufnr, icon, modified, item.name)
 
     table.insert(lines, line)
     items[#lines] = {
@@ -68,13 +65,6 @@ function M.render()
       name = item.name,
       path = item.path,
     }
-
-    if item.current then
-      table.insert(highlights, {
-        line = #lines,
-        group = "NvimSidebarCurrent",
-      })
-    end
 
     if item.modified then
       table.insert(highlights, {

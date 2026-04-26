@@ -5,9 +5,9 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 
-local function ignored(name)
-  for _, ignored_name in ipairs(config.options.tree.ignored) do
-    if name == ignored_name then
+local function excluded(name)
+  for _, pattern in ipairs(config.options.tree.exclude_patterns) do
+    if name:find(pattern) ~= nil then
       return true
     end
   end
@@ -31,7 +31,7 @@ function M.scan(dir)
       break
     end
 
-    if not ignored(name) then
+    if not excluded(name) then
       local full_path = path.join(dir, name)
       local stat = uv.fs_stat(full_path)
 

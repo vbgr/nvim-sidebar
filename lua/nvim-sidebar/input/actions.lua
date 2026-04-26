@@ -6,6 +6,10 @@ local state = require("nvim-sidebar.state")
 local M = {}
 
 local function selected_items(opts)
+  if opts ~= nil and opts.range ~= nil then
+    return state.get_items_in_range(opts.range.start_line, opts.range.end_line)
+  end
+
   if opts ~= nil and opts.visual then
     return state.get_selected_items()
   end

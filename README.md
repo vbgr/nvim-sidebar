@@ -78,6 +78,24 @@ The order of these columns may be defined via configuration parameter.
 
 File tree is rendered in the current neovim workding directory `vim.fn.getcwd()`.
 
+Entries may be excluded from the file tree with `tree.exclude_patterns`.
+Patterns use Lua pattern syntax and match the entry basename, not the full path.
+The default excludes `.git`, `.DS_Store`, `*.pyc`, `__pycache__`, and
+`node_modules`.
+
+```lua
+require("nvim-sidebar").setup({
+  tree = {
+    exclude_patterns = {
+      "^%.git$",
+      "^dist$",
+      "%.log$",
+      "%.pyc$",
+    },
+  },
+})
+```
+
 #### Functionality
 
 **Locate**

@@ -174,7 +174,6 @@ function M.render(ctx)
   local lines = {}
   local items = {}
   local highlights = {}
-  local current_path = current_file_path()
   local column_widths = ctx.mode == "full" and full_column_widths(nodes) or {}
 
   for _, node in ipairs(nodes) do
@@ -196,13 +195,6 @@ function M.render(ctx)
         table.insert(highlights, {
           line = #lines,
           group = "NvimSidebarDirectory",
-        })
-      end
-
-      if current_path ~= nil and node.path == current_path then
-        table.insert(highlights, {
-          line = #lines,
-          group = "NvimSidebarCurrent",
         })
       end
 

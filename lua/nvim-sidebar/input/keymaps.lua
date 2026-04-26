@@ -8,14 +8,33 @@ local function in_visual_mode()
   return mode == "v" or mode == "V" or mode == "\22"
 end
 
+local function visual_range()
+  if not in_visual_mode() then
+    return nil
+  end
+
+  return {
+    start_line = vim.fn.line("v"),
+    end_line = vim.fn.line("."),
+  }
+end
+
 local function map(bufnr, modes, lhs, action)
   if lhs == nil or lhs == "" then
     return
   end
 
   vim.keymap.set(modes, lhs, function()
+    local range = visual_range()
+    local visual = range ~= nil
+
+    if visual then
+      vim.cmd("normal! \027")
+    end
+
     actions.dispatch(action, {
-      visual = in_visual_mode(),
+      visual = visual,
+      range = range,
     })
   end, {
     buffer = bufnr,

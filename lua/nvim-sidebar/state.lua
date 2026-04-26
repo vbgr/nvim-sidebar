@@ -86,11 +86,13 @@ function M.get_current_item()
   return M.line_items[bufnr] and M.line_items[bufnr][line] or nil
 end
 
-function M.get_selected_items()
+function M.get_items_in_range(start_line, end_line)
   local bufnr = vim.api.nvim_get_current_buf()
   local items = M.line_items[bufnr] or {}
-  local start_line = vim.fn.line("'<")
-  local end_line = vim.fn.line("'>")
+
+  if start_line == nil or end_line == nil then
+    return {}
+  end
 
   if start_line > end_line then
     start_line, end_line = end_line, start_line
@@ -105,6 +107,10 @@ function M.get_selected_items()
   end
 
   return selected
+end
+
+function M.get_selected_items()
+  return M.get_items_in_range(vim.fn.line("'<"), vim.fn.line("'>"))
 end
 
 return M
