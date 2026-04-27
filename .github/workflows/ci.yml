@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Stylua and Docker tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Lua formatting
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --check lua tests
+
+      - name: Build test image
+        run: docker build -t nvim-sidebar-test .
+
+      - name: Run tests in Docker
+        run: docker run --rm nvim-sidebar-test

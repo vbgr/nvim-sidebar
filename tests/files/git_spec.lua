@@ -66,7 +66,10 @@ t.test("files view marks open buffers and git statuses", function()
 
     vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "tracked.txt")))
     sidebar.open("files")
-    t.assert_contains(select(2, t.find_line("tracked.txt")), " " .. config.options.icons.buffer_open)
+    t.assert_contains(
+      select(2, t.find_line("tracked.txt")),
+      " " .. config.options.icons.buffer_open
+    )
 
     local result = files.render({
       mode = "sidebar",
