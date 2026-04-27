@@ -16,6 +16,7 @@ M.previous = {
   winid = nil,
 }
 
+M.buffer_windows = {}
 M.active_source = nil
 M.render_mode = "sidebar"
 M.line_items = {}
@@ -44,20 +45,78 @@ local function buf_is_valid(bufnr)
   return bufnr ~= nil and vim.api.nvim_buf_is_valid(bufnr)
 end
 
+local function current_tabpage()
+  return vim.api.nvim_get_current_tabpage()
+end
+
+local function win_is_in_current_tab(winid)
+  return win_is_valid(winid) and vim.api.nvim_win_get_tabpage(winid) == current_tabpage()
+end
+
 function M.is_plugin_buffer(bufnr)
   return bufnr ~= nil and (bufnr == M.sidebar.bufnr or bufnr == M.full.bufnr)
 end
 
-function M.remember_current_window()
-  local winid = vim.api.nvim_get_current_win()
-  local bufnr = vim.api.nvim_get_current_buf()
+function M.is_editor_window(winid)
+  if not win_is_in_current_tab(winid) then
+    return false
+  end
 
-  if M.is_plugin_buffer(bufnr) then
+  local ok_config, win_config = pcall(vim.api.nvim_win_get_config, winid)
+  if not ok_config or win_config.relative ~= "" then
+    return false
+  end
+
+  local ok_type, win_type = pcall(vim.fn.win_gettype, winid)
+  if not ok_type or win_type ~= "" then
+    return false
+  end
+
+  return not M.is_plugin_buffer(vim.api.nvim_win_get_buf(winid))
+end
+
+function M.remember_window(winid, opts)
+  if not M.is_editor_window(winid) then
     return
   end
 
-  M.previous.winid = winid
-  M.previous.bufnr = bufnr
+  opts = opts or {}
+
+  local bufnr = vim.api.nvim_win_get_buf(winid)
+
+  if opts.previous ~= false then
+    M.previous.winid = winid
+    M.previous.bufnr = bufnr
+  end
+
+  M.buffer_windows[bufnr] = winid
+end
+
+function M.remember_current_window()
+  M.remember_window(vim.api.nvim_get_current_win())
+end
+
+function M.remember_current_tab_windows()
+  for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    M.remember_window(winid, {
+      previous = false,
+    })
+  end
+end
+
+function M.buffer_window(bufnr)
+  if bufnr == nil then
+    return nil
+  end
+
+  local winid = M.buffer_windows[bufnr]
+
+  if M.is_editor_window(winid) then
+    return winid
+  end
+
+  M.buffer_windows[bufnr] = nil
+  return nil
 end
 
 function M.previous_window()

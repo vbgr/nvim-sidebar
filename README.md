@@ -111,6 +111,8 @@ buffer is highlighted while focus is outside the buffers sidebar.
 Default buffer actions:
 
 - `o`: open selected buffer
+- `<Tab>`: move to next buffer and show it in its editor window
+- `<S-Tab>`: move to previous buffer and show it in its editor window
 - `/`: fuzzy search buffers
 - `y`: yank selected buffer names
 - `L`: locate current editor buffer
@@ -192,6 +194,8 @@ Common options:
     duplicate = "D",
     rename = "R",
     locate = "L",
+    next_buffer = "<Tab>",
+    previous_buffer = "<S-Tab>",
     refresh = "r",
     close = "q",
   },

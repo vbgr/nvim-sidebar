@@ -131,7 +131,7 @@ t.test("buffers view separates file icons from names and highlights icons", func
       local result = buffers.render()
       local line_number, line = line_with_name(result, "alpha.txt")
       local bufnr = vim.api.nvim_get_current_buf()
-      local buffer_number = string.format("%2d", bufnr)
+      local buffer_number = string.format("%3d", bufnr)
       local icon_col = #(buffer_number .. " ")
 
       t.assert_equal(line, string.format("  %s B alpha.txt", buffer_number))
@@ -154,7 +154,7 @@ t.test("buffers view supports configurable left padding", function()
 
     t.assert_contains(
       line,
-      "    " .. string.format("%2d", vim.api.nvim_get_current_buf()) .. " alpha.txt"
+      "    " .. string.format("%3d", vim.api.nvim_get_current_buf()) .. " alpha.txt"
     )
   end)
 end)
@@ -326,6 +326,118 @@ t.test("buffers open action switches previous window to selected buffer", functi
     buffers.actions.open(t.item_by_name("alpha.txt"))
 
     t.assert_equal(vim.api.nvim_get_current_buf(), alpha_bufnr)
+  end)
+end)
+
+t.test("buffers open action keeps using focused editor window after owner scan", function()
+  t.temp_dir("buffers-open-action-previous-window", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "alpha.txt"), "alpha")
+    t.write_file(path.join(root, "beta.txt"), "beta")
+
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
+    local alpha_winid = vim.api.nvim_get_current_win()
+    vim.cmd("vsplit " .. vim.fn.fnameescape(path.join(root, "beta.txt")))
+    vim.api.nvim_set_current_win(alpha_winid)
+
+    sidebar.open("buffers")
+    buffers.actions.open(t.item_by_name("beta.txt"))
+
+    t.assert_equal(vim.api.nvim_get_current_win(), alpha_winid)
+    t.assert_equal(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "beta.txt")
+  end)
+end)
+
+t.test("buffers tab moves to next buffer and keeps sidebar focus", function()
+  t.temp_dir("buffers-tab-next", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "alpha.txt"), "alpha")
+    t.write_file(path.join(root, "beta.txt"), "beta")
+
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
+    local alpha_bufnr = vim.api.nvim_get_current_buf()
+    vim.cmd("vsplit " .. vim.fn.fnameescape(path.join(root, "beta.txt")))
+    local beta_winid = vim.api.nvim_get_current_win()
+    local beta_bufnr = vim.api.nvim_get_current_buf()
+
+    sidebar.open("buffers")
+
+    t.trigger_normal_mapping(line_by_bufnr(alpha_bufnr), "<Tab>")
+
+    t.assert_equal(vim.api.nvim_get_current_win(), state.sidebar.winid)
+    t.assert_equal(sidebar_cursor_line(), line_by_bufnr(beta_bufnr))
+    t.assert_equal(vim.api.nvim_win_get_buf(beta_winid), beta_bufnr)
+    t.assert_equal(state.previous_window(), beta_winid)
+    t.assert_equal(state.previous_buffer(), beta_bufnr)
+  end)
+end)
+
+t.test("buffers shift-tab wraps to previous buffer and keeps sidebar focus", function()
+  t.temp_dir("buffers-tab-previous", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "alpha.txt"), "alpha")
+    t.write_file(path.join(root, "beta.txt"), "beta")
+
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
+    local alpha_bufnr = vim.api.nvim_get_current_buf()
+    vim.cmd("vsplit " .. vim.fn.fnameescape(path.join(root, "beta.txt")))
+    local beta_bufnr = vim.api.nvim_get_current_buf()
+
+    sidebar.open("buffers")
+
+    t.trigger_normal_mapping(line_by_bufnr(alpha_bufnr), "<S-Tab>")
+
+    t.assert_equal(vim.api.nvim_get_current_win(), state.sidebar.winid)
+    t.assert_equal(sidebar_cursor_line(), line_by_bufnr(beta_bufnr))
+  end)
+end)
+
+t.test("buffers tab opens hidden buffer in remembered owner window", function()
+  t.temp_dir("buffers-tab-hidden-owner", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "alpha.txt"), "alpha")
+    t.write_file(path.join(root, "beta.txt"), "beta")
+    t.write_file(path.join(root, "gamma.txt"), "gamma")
+
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
+    vim.cmd("vsplit " .. vim.fn.fnameescape(path.join(root, "beta.txt")))
+    local beta_winid = vim.api.nvim_get_current_win()
+    local beta_bufnr = vim.api.nvim_get_current_buf()
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "gamma.txt")))
+    local gamma_bufnr = vim.api.nvim_get_current_buf()
+    vim.cmd("buffer " .. beta_bufnr)
+
+    sidebar.open("buffers")
+
+    t.trigger_normal_mapping(line_by_bufnr(beta_bufnr), "<Tab>")
+
+    t.assert_equal(vim.api.nvim_get_current_win(), state.sidebar.winid)
+    t.assert_equal(sidebar_cursor_line(), line_by_bufnr(gamma_bufnr))
+    t.assert_equal(vim.api.nvim_win_get_buf(beta_winid), gamma_bufnr)
+  end)
+end)
+
+t.test("buffers tab falls back to previous editor window for stale owner", function()
+  t.temp_dir("buffers-tab-stale-owner", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "alpha.txt"), "alpha")
+    t.write_file(path.join(root, "beta.txt"), "beta")
+
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
+    local alpha_winid = vim.api.nvim_get_current_win()
+    local alpha_bufnr = vim.api.nvim_get_current_buf()
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "beta.txt")))
+    local beta_bufnr = vim.api.nvim_get_current_buf()
+    vim.cmd("buffer " .. alpha_bufnr)
+
+    state.buffer_windows[beta_bufnr] = 999999
+
+    sidebar.open("buffers")
+
+    t.trigger_normal_mapping(line_by_bufnr(alpha_bufnr), "<Tab>")
+
+    t.assert_equal(vim.api.nvim_get_current_win(), state.sidebar.winid)
+    t.assert_equal(vim.api.nvim_win_get_buf(alpha_winid), beta_bufnr)
   end)
 end)
 

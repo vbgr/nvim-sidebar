@@ -173,8 +173,9 @@ Each row contains:
 If two listed buffers have the same file name, only those duplicated names are
 shown with their parent directory, for example `src/init.lua`.
 
-The buffers source supports opening buffers, locating the previous editor
-buffer, search, and yanking buffer names.
+The buffers source supports opening buffers, tabbing through buffers in their
+editor windows, locating the previous editor buffer, search, and yanking buffer
+names.
 
 The current editor buffer is highlighted while focus is outside the buffers
 sidebar. When the buffers sidebar is focused, the normal cursor line is used
@@ -208,6 +209,9 @@ Files source mappings:
 Buffers source mappings:
 >
   o    Open selected buffer
+  Tab  Move to next buffer and show it in its editor window
+  S-Tab
+       Move to previous buffer and show it in its editor window
   /    Search
   y    Yank buffer names
   L    Locate current editor buffer
@@ -389,6 +393,8 @@ Default options:
       duplicate = "D",
       rename = "R",
       locate = "L",
+      next_buffer = "<Tab>",
+      previous_buffer = "<S-Tab>",
       refresh = "r",
       close = "q",
     },

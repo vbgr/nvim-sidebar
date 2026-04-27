@@ -1,5 +1,6 @@
 local actions = require("nvim-sidebar.input.actions")
 local config = require("nvim-sidebar.config")
+local state = require("nvim-sidebar.state")
 
 local M = {}
 
@@ -43,8 +44,23 @@ local function map(bufnr, modes, lhs, action)
   })
 end
 
+local function unmap(bufnr, modes, lhs)
+  if lhs == nil or lhs == "" then
+    return
+  end
+
+  for _, mode in ipairs(modes) do
+    pcall(vim.keymap.del, mode, lhs, {
+      buffer = bufnr,
+    })
+  end
+end
+
 function M.apply(bufnr)
   local maps = config.options.keymaps
+
+  unmap(bufnr, { "n" }, maps.next_buffer)
+  unmap(bufnr, { "n" }, maps.previous_buffer)
 
   map(bufnr, { "n" }, maps.open, "open")
   map(bufnr, { "n" }, maps.collapse, "collapse")
@@ -62,6 +78,11 @@ function M.apply(bufnr)
   map(bufnr, { "n" }, maps.locate, "locate")
   map(bufnr, { "n" }, maps.refresh, "refresh")
   map(bufnr, { "n" }, maps.close, "close")
+
+  if state.active_source == "buffers" then
+    map(bufnr, { "n" }, maps.next_buffer, "next_buffer")
+    map(bufnr, { "n" }, maps.previous_buffer, "previous_buffer")
+  end
 end
 
 return M

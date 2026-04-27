@@ -35,6 +35,8 @@ M.defaults = {
     duplicate = "D",
     rename = "R",
     locate = "L",
+    next_buffer = "<Tab>",
+    previous_buffer = "<S-Tab>",
     refresh = "r",
     close = "q",
   },

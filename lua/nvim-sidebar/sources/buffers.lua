@@ -20,6 +20,91 @@ local function win_is_valid(winid)
   return winid ~= nil and vim.api.nvim_win_is_valid(winid)
 end
 
+local function current_tabpage()
+  return vim.api.nvim_get_current_tabpage()
+end
+
+local function win_is_in_current_tab(winid)
+  return win_is_valid(winid) and vim.api.nvim_win_get_tabpage(winid) == current_tabpage()
+end
+
+local function visible_buffer_window(bufnr)
+  local remembered = state.buffer_window(bufnr)
+
+  if remembered ~= nil and vim.api.nvim_win_get_buf(remembered) == bufnr then
+    return remembered
+  end
+
+  for _, winid in ipairs(vim.fn.win_findbuf(bufnr)) do
+    if win_is_in_current_tab(winid) and state.is_editor_window(winid) then
+      return winid
+    end
+  end
+
+  return nil
+end
+
+local function first_editor_window()
+  for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if state.is_editor_window(winid) then
+      return winid
+    end
+  end
+
+  return nil
+end
+
+local function target_window(bufnr)
+  local visible = visible_buffer_window(bufnr)
+
+  if visible ~= nil then
+    return visible
+  end
+
+  local remembered = state.buffer_window(bufnr)
+
+  if remembered ~= nil then
+    return remembered
+  end
+
+  local previous = state.previous_window()
+
+  if state.is_editor_window(previous) then
+    return previous
+  end
+
+  return first_editor_window()
+end
+
+local function switch_buffer_in_owner_window(bufnr)
+  if not buf_is_valid(bufnr) then
+    return false
+  end
+
+  local sidebar_winid = vim.api.nvim_get_current_win()
+  local winid = target_window(bufnr)
+
+  if winid == nil then
+    notify.warn("No editor window available for buffer")
+    return false
+  end
+
+  local ok, err = pcall(vim.api.nvim_win_set_buf, winid, bufnr)
+
+  if not ok then
+    notify.warn("Could not switch buffer: " .. tostring(err))
+    return false
+  end
+
+  state.remember_window(winid)
+
+  if win_is_valid(sidebar_winid) then
+    pcall(vim.api.nvim_set_current_win, sidebar_winid)
+  end
+
+  return true
+end
+
 local function buffer_name(bufnr)
   local name = vim.api.nvim_buf_get_name(bufnr)
 
@@ -93,7 +178,7 @@ local function icon_text(icon)
 end
 
 local function buffer_number_text(bufnr)
-  return string.format("%2d", bufnr)
+  return string.format("%3d", bufnr)
 end
 
 function M.render()
@@ -194,6 +279,68 @@ end
 
 M.actions = {}
 
+local function buffer_rows()
+  local rows = {}
+  local bufnr = vim.api.nvim_get_current_buf()
+
+  for line, item in pairs(state.line_items[bufnr] or {}) do
+    if item.source == "buffers" and buf_is_valid(item.bufnr) then
+      table.insert(rows, {
+        line = line,
+        item = item,
+      })
+    end
+  end
+
+  table.sort(rows, function(left, right)
+    return left.line < right.line
+  end)
+
+  return rows
+end
+
+local function adjacent_buffer_row(direction)
+  local rows = buffer_rows()
+
+  if #rows == 0 then
+    return nil
+  end
+
+  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+
+  if direction > 0 then
+    for _, row in ipairs(rows) do
+      if row.line > current_line then
+        return row
+      end
+    end
+
+    return rows[1]
+  end
+
+  for index = #rows, 1, -1 do
+    if rows[index].line < current_line then
+      return rows[index]
+    end
+  end
+
+  return rows[#rows]
+end
+
+local function switch_adjacent_buffer(direction)
+  local row = adjacent_buffer_row(direction)
+
+  if row == nil then
+    return
+  end
+
+  vim.api.nvim_win_set_cursor(0, {
+    row.line,
+    0,
+  })
+  switch_buffer_in_owner_window(row.item.bufnr)
+end
+
 function M.actions.locate()
   local bufnr = state.previous_buffer()
 
@@ -219,6 +366,14 @@ function M.actions.open(item)
   end
 
   vim.api.nvim_set_current_buf(item.bufnr)
+end
+
+function M.actions.next_buffer()
+  switch_adjacent_buffer(1)
+end
+
+function M.actions.previous_buffer()
+  switch_adjacent_buffer(-1)
 end
 
 function M.actions.yank_name(item, ctx)
