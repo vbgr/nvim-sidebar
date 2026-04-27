@@ -124,6 +124,7 @@ function M.reset_plugin(opts)
     bufnr = nil,
     winid = nil,
   }
+  state.buffer_windows = {}
   state.active_source = nil
   state.render_mode = "sidebar"
   state.line_items = {}

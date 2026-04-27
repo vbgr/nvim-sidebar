@@ -10,6 +10,7 @@ local window = require("nvim-sidebar.ui.window")
 local M = {}
 
 local initialized = false
+local buffer_delete_refresh_scheduled = false
 
 local function sync_buffers_current_cursor()
   if not window.is_sidebar_open() or state.active_source ~= "buffers" then
@@ -29,7 +30,15 @@ local function refresh_sidebar()
 end
 
 local function handle_buffer_delete()
+  if buffer_delete_refresh_scheduled then
+    return
+  end
+
+  buffer_delete_refresh_scheduled = true
+
   vim.schedule(function()
+    buffer_delete_refresh_scheduled = false
+
     local ok, err = xpcall(function()
       refresh_sidebar()
     end, debug.traceback)
@@ -100,6 +109,7 @@ end
 function M.open(source_name)
   ensure_setup()
   state.remember_current_window()
+  state.remember_current_tab_windows()
 
   local source = active_source(source_name)
   local winid = window.open_sidebar()
