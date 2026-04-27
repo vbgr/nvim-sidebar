@@ -2,7 +2,6 @@
 .nvimlog
 
 .DS_Store
-.luacov-html
 
 # Coverage output
 coverage/
