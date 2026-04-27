@@ -13,10 +13,6 @@ function M.setup()
     link = "WarningMsg",
     default = true,
   })
-  vim.api.nvim_set_hl(0, "NvimSidebarCurrentBuffer", {
-    link = "CursorLine",
-    default = true,
-  })
   vim.api.nvim_set_hl(0, "NvimSidebarGitModified", {
     link = "WarningMsg",
     default = true,

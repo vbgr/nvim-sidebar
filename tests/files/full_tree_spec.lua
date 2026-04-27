@@ -15,6 +15,22 @@ local function display_end(line, text)
   return vim.fn.strdisplaywidth(line:sub(1, end_col))
 end
 
+local function set_numbered_editor_window()
+  vim.wo.number = true
+  vim.wo.relativenumber = true
+  vim.wo.signcolumn = "yes"
+  vim.wo.cursorline = false
+  vim.wo.statusline = "editor-status"
+end
+
+local function assert_numbered_editor_window()
+  t.assert_true(vim.wo.number)
+  t.assert_true(vim.wo.relativenumber)
+  t.assert_equal(vim.wo.signcolumn, "yes")
+  t.assert_false(vim.wo.cursorline)
+  t.assert_equal(vim.wo.statusline, "editor-status")
+end
+
 t.test("full tree renders configurable metadata columns and aligned size column", function()
   t.temp_dir("files-full-tree", function(root)
     t.reset_plugin({
@@ -80,15 +96,20 @@ t.test("full tree close mapping restores previous editor buffer", function()
     t.reset_plugin()
     t.write_file(path.join(root, "README.md"), "hello world")
     vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "README.md")))
+    set_numbered_editor_window()
 
     local previous_bufnr = vim.api.nvim_get_current_buf()
 
     sidebar.open_full_tree()
+    t.assert_false(vim.wo.number)
+    t.assert_true(vim.wo.cursorline)
     t.trigger_normal_mapping(1, "q")
 
     t.assert_equal(vim.api.nvim_get_current_buf(), previous_bufnr)
+    assert_numbered_editor_window()
     t.assert_equal(state.full.bufnr, nil)
     t.assert_equal(state.full.winid, nil)
+    t.assert_equal(state.full.window_options, nil)
   end)
 end)
 
@@ -96,13 +117,18 @@ t.test("full tree open mapping opens selected file and clears full tree state", 
   t.temp_dir("files-full-tree-open", function(root)
     t.reset_plugin()
     t.write_file(path.join(root, "README.md"), "hello world")
+    set_numbered_editor_window()
 
     sidebar.open_full_tree()
+    t.assert_false(vim.wo.number)
+    t.assert_true(vim.wo.cursorline)
     t.trigger_normal_mapping(t.line_by_name("README.md"), "o")
 
     t.assert_equal(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "README.md")
+    assert_numbered_editor_window()
     t.assert_equal(state.full.bufnr, nil)
     t.assert_equal(state.full.winid, nil)
+    t.assert_equal(state.full.window_options, nil)
   end)
 end)
 

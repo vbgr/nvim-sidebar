@@ -12,12 +12,12 @@ local M = {}
 local initialized = false
 local pending_buffer_deletes = 0
 
-local function update_buffers_current_highlight()
+local function sync_buffers_current_cursor()
   if not window.is_sidebar_open() or state.active_source ~= "buffers" then
     return
   end
 
-  sources.get("buffers").update_current_highlight()
+  sources.get("buffers").sync_current_cursor()
 end
 
 local function refresh_buffers_sidebar()
@@ -58,7 +58,7 @@ local function setup_autocmds()
     group = group,
     callback = function()
       state.remember_current_window()
-      update_buffers_current_highlight()
+      sync_buffers_current_cursor()
     end,
   })
 

@@ -118,6 +118,7 @@ function M.reset_plugin(opts)
   state.full = {
     bufnr = nil,
     winid = nil,
+    window_options = nil,
   }
   state.previous = {
     bufnr = nil,

@@ -8,6 +8,7 @@ M.sidebar = {
 M.full = {
   bufnr = nil,
   winid = nil,
+  window_options = nil,
 }
 
 M.previous = {
