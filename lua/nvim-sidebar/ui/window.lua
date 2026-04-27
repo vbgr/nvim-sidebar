@@ -79,28 +79,6 @@ local function current_tab_wins()
   return vim.api.nvim_tabpage_list_wins(0)
 end
 
-local function listed_editor_buffers()
-  local buffers = {}
-
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    if buf_is_valid(bufnr) and vim.bo[bufnr].buflisted and not state.is_plugin_buffer(bufnr) then
-      table.insert(buffers, bufnr)
-    end
-  end
-
-  return buffers
-end
-
-local function first_non_plugin_window()
-  for _, winid in ipairs(current_tab_wins()) do
-    if win_is_valid(winid) and not state.is_plugin_buffer(vim.api.nvim_win_get_buf(winid)) then
-      return winid
-    end
-  end
-
-  return nil
-end
-
 function M.open_sidebar()
   if M.is_sidebar_open() then
     vim.api.nvim_set_current_win(state.sidebar.winid)
@@ -122,40 +100,6 @@ function M.open_sidebar()
   apply_window_options(state.sidebar.winid)
 
   return state.sidebar.winid
-end
-
-function M.ensure_default_editor_buffer()
-  if #listed_editor_buffers() > 0 then
-    return nil
-  end
-
-  local winid = first_non_plugin_window()
-
-  if winid ~= nil then
-    vim.api.nvim_set_current_win(winid)
-    vim.cmd.enew()
-    state.remember_current_window()
-    return vim.api.nvim_get_current_buf()
-  end
-
-  if not M.is_sidebar_open() then
-    vim.cmd.enew()
-    state.remember_current_window()
-    return vim.api.nvim_get_current_buf()
-  end
-
-  vim.api.nvim_set_current_win(state.sidebar.winid)
-
-  if config.options.side == "right" then
-    vim.cmd("leftabove vertical new")
-  else
-    vim.cmd("rightbelow vertical new")
-  end
-
-  vim.api.nvim_win_set_width(state.sidebar.winid, config.options.width)
-  state.remember_current_window()
-
-  return vim.api.nvim_get_current_buf()
 end
 
 function M.set_title(mode, title)
@@ -248,9 +192,10 @@ end
 
 function M.close_full()
   local full_winid = state.full.winid
+  local full_bufnr = state.full.bufnr
   local window_options = state.full.window_options
 
-  if not buf_is_valid(state.full.bufnr) then
+  if not buf_is_valid(full_bufnr) then
     restore_window_options(full_winid, window_options)
     state.full.bufnr = nil
     state.full.winid = nil
@@ -258,7 +203,6 @@ function M.close_full()
     return
   end
 
-  local full_bufnr = state.full.bufnr
   local previous_bufnr = state.previous_buffer()
 
   if win_is_valid(full_winid) then

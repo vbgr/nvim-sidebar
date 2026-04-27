@@ -14,22 +14,6 @@ local function other_window(winid)
   return nil
 end
 
-local function listed_editor_buffers()
-  local buffers = {}
-
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    if
-      vim.api.nvim_buf_is_valid(bufnr)
-      and vim.bo[bufnr].buflisted
-      and not state.is_plugin_buffer(bufnr)
-    then
-      table.insert(buffers, bufnr)
-    end
-  end
-
-  return buffers
-end
-
 local function set_editor_window_options()
   vim.wo.number = true
   vim.wo.relativenumber = true
@@ -131,19 +115,6 @@ t.test("close_sidebar_if_last_regular_window keeps sidebar when called from side
   t.assert_true(window.is_sidebar_open())
   t.assert_true(vim.api.nvim_win_is_valid(sidebar_winid))
   t.assert_equal(vim.api.nvim_get_current_win(), sidebar_winid)
-end)
-
-t.test("ensure_default_editor_buffer creates listed buffer when editors are unlisted", function()
-  t.reset_plugin()
-  vim.bo.buflisted = false
-
-  local bufnr = window.ensure_default_editor_buffer()
-
-  t.assert_equal(vim.api.nvim_get_current_buf(), bufnr)
-  t.assert_true(vim.bo[bufnr].buflisted)
-  t.assert_equal(#listed_editor_buffers(), 1)
-  t.assert_equal(state.previous_window(), vim.api.nvim_get_current_win())
-  t.assert_equal(state.previous_buffer(), bufnr)
 end)
 
 t.test("close_full restores previous editor buffer and clears full state", function()

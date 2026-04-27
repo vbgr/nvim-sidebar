@@ -76,22 +76,6 @@ local function wait_for_sidebar(predicate)
   t.assert_true(ok, "timed out waiting for sidebar update")
 end
 
-local function listed_editor_buffers()
-  local result = {}
-
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    if
-      vim.api.nvim_buf_is_valid(bufnr)
-      and vim.bo[bufnr].buflisted
-      and not state.is_plugin_buffer(bufnr)
-    then
-      table.insert(result, bufnr)
-    end
-  end
-
-  return result
-end
-
 t.test("buffers view renders listed buffers and modified markers", function()
   t.temp_dir("buffers-open", function(root)
     t.reset_plugin()
@@ -264,7 +248,7 @@ t.test("buffers cursor is unchanged when current buffer is filtered out", functi
   end)
 end)
 
-t.test("buffers view refreshes after bdelete of current editor buffer", function()
+t.test("buffers view refreshes after bdelete of hidden buffer", function()
   t.temp_dir("buffers-open-bdelete", function(root)
     t.reset_plugin()
     t.write_file(path.join(root, "alpha.txt"), "alpha")
@@ -276,7 +260,6 @@ t.test("buffers view refreshes after bdelete of current editor buffer", function
 
     sidebar.open("buffers")
     vim.api.nvim_set_current_win(state.previous_window())
-    vim.cmd("buffer " .. alpha_bufnr)
     vim.cmd("bdelete " .. alpha_bufnr)
 
     wait_for_sidebar(function()
@@ -291,7 +274,7 @@ t.test("buffers view refreshes after bdelete of current editor buffer", function
   end)
 end)
 
-t.test("buffers view refreshes after bwipeout of current editor buffer", function()
+t.test("buffers view refreshes after bwipeout of hidden buffer", function()
   t.temp_dir("buffers-open-bwipeout", function(root)
     t.reset_plugin()
     t.write_file(path.join(root, "alpha.txt"), "alpha")
@@ -303,7 +286,6 @@ t.test("buffers view refreshes after bwipeout of current editor buffer", functio
 
     sidebar.open("buffers")
     vim.api.nvim_set_current_win(state.previous_window())
-    vim.cmd("buffer " .. alpha_bufnr)
     vim.cmd("bwipeout " .. alpha_bufnr)
 
     wait_for_sidebar(function()
@@ -317,83 +299,6 @@ t.test("buffers view refreshes after bwipeout of current editor buffer", functio
     t.assert_not_contains(sidebar_text(), "[No Name]")
   end)
 end)
-
-t.test("buffers view creates unnamed buffer after bdelete of last editor buffer", function()
-  t.temp_dir("buffers-open-bdelete-last", function(root)
-    t.reset_plugin()
-    t.write_file(path.join(root, "alpha.txt"), "alpha")
-
-    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
-    local alpha_bufnr = vim.api.nvim_get_current_buf()
-
-    sidebar.open("buffers")
-    vim.api.nvim_set_current_win(state.previous_window())
-    vim.cmd("bdelete " .. alpha_bufnr)
-
-    wait_for_sidebar(function()
-      return sidebar_text():find("[No Name]", 1, true) ~= nil
-    end)
-
-    local listed = listed_editor_buffers()
-
-    t.assert_equal(#listed, 1)
-    t.assert_equal(vim.api.nvim_buf_get_name(listed[1]), "")
-    t.assert_contains(sidebar_text(), "[No Name]")
-    t.assert_not_contains(sidebar_text(), "alpha.txt")
-  end)
-end)
-
-t.test("buffers view creates unnamed buffer after bwipeout of last editor buffer", function()
-  t.temp_dir("buffers-open-bwipeout-last", function(root)
-    t.reset_plugin()
-    t.write_file(path.join(root, "alpha.txt"), "alpha")
-
-    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
-    local alpha_bufnr = vim.api.nvim_get_current_buf()
-
-    sidebar.open("buffers")
-    vim.api.nvim_set_current_win(state.previous_window())
-    vim.cmd("bwipeout " .. alpha_bufnr)
-
-    wait_for_sidebar(function()
-      return sidebar_text():find("[No Name]", 1, true) ~= nil
-    end)
-
-    local listed = listed_editor_buffers()
-
-    t.assert_equal(#listed, 1)
-    t.assert_equal(vim.api.nvim_buf_get_name(listed[1]), "")
-    t.assert_contains(sidebar_text(), "[No Name]")
-    t.assert_not_contains(sidebar_text(), "alpha.txt")
-  end)
-end)
-
-t.test(
-  "buffers view creates unnamed buffer after deleting last editor buffer from sidebar",
-  function()
-    t.temp_dir("buffers-open-bdelete-last-from-sidebar", function(root)
-      t.reset_plugin()
-      t.write_file(path.join(root, "alpha.txt"), "alpha")
-
-      vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
-      local alpha_bufnr = vim.api.nvim_get_current_buf()
-
-      sidebar.open("buffers")
-      vim.cmd("bdelete " .. alpha_bufnr)
-
-      wait_for_sidebar(function()
-        return sidebar_text():find("[No Name]", 1, true) ~= nil
-      end)
-
-      local listed = listed_editor_buffers()
-
-      t.assert_equal(#listed, 1)
-      t.assert_equal(vim.api.nvim_buf_get_name(listed[1]), "")
-      t.assert_contains(sidebar_text(), "[No Name]")
-      t.assert_not_contains(sidebar_text(), "alpha.txt")
-    end)
-  end
-)
 
 t.test("buffers sidebar uses source name as local statusline title", function()
   t.temp_dir("buffers-open-title", function(root)

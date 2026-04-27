@@ -53,6 +53,12 @@ local function sidebar_line(pattern)
   return nil
 end
 
+local function wait_for_sidebar(predicate)
+  local ok = vim.wait(1000, predicate, 10)
+
+  t.assert_true(ok, "timed out waiting for sidebar update")
+end
+
 t.test("files view renders cwd path, directories first, and directory highlights", function()
   t.temp_dir("files-open", function(root)
     t.open_fixture_tree(root)
@@ -154,6 +160,36 @@ t.test("files view marks files opened in buffers", function()
     sidebar.open("files")
 
     t.assert_contains(select(2, t.find_line("alpha.txt")), " " .. config.options.icons.buffer_open)
+  end)
+end)
+
+t.test("files view refreshes opened markers after bdelete", function()
+  t.temp_dir("files-open-buffer-marker-bdelete", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "alpha.txt"), "alpha")
+    t.write_file(path.join(root, "beta.txt"), "beta")
+
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
+    local alpha_bufnr = vim.api.nvim_get_current_buf()
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "beta.txt")))
+
+    sidebar.open("files")
+
+    local marker = " " .. config.options.icons.buffer_open
+
+    t.assert_contains(sidebar_line("alpha.txt"), marker)
+
+    vim.api.nvim_set_current_win(state.previous_window())
+    vim.cmd("bdelete " .. alpha_bufnr)
+
+    wait_for_sidebar(function()
+      local line = sidebar_line("alpha.txt")
+
+      return line ~= nil and not line:find(marker, 1, true)
+    end)
+
+    t.assert_not_contains(sidebar_line("alpha.txt"), marker)
+    t.assert_contains(sidebar_line("beta.txt"), marker)
   end)
 end)
 

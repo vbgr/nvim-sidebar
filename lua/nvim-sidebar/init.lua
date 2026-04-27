@@ -10,7 +10,6 @@ local window = require("nvim-sidebar.ui.window")
 local M = {}
 
 local initialized = false
-local pending_buffer_deletes = 0
 
 local function sync_buffers_current_cursor()
   if not window.is_sidebar_open() or state.active_source ~= "buffers" then
@@ -20,28 +19,20 @@ local function sync_buffers_current_cursor()
   sources.get("buffers").sync_current_cursor()
 end
 
-local function refresh_buffers_sidebar()
-  if not window.is_sidebar_open() or state.active_source ~= "buffers" then
+local function refresh_sidebar()
+  if not window.is_sidebar_open() then
     return
   end
 
-  render.render_source(sources.get("buffers"), "sidebar")
+  render.render_source(sources.get(state.active_source), "sidebar")
   keymaps.apply(state.sidebar.bufnr)
 end
 
 local function handle_buffer_delete()
-  pending_buffer_deletes = pending_buffer_deletes + 1
-
   vim.schedule(function()
     local ok, err = xpcall(function()
-      if window.is_sidebar_open() then
-        window.ensure_default_editor_buffer()
-      end
-
-      refresh_buffers_sidebar()
+      refresh_sidebar()
     end, debug.traceback)
-
-    pending_buffer_deletes = math.max(pending_buffer_deletes - 1, 0)
 
     if not ok then
       error(err)
@@ -78,10 +69,6 @@ local function setup_autocmds()
     group = group,
     callback = function()
       vim.schedule(function()
-        if pending_buffer_deletes > 0 then
-          return
-        end
-
         window.close_if_sidebar_is_last_window()
       end)
     end,
