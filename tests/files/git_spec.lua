@@ -1,5 +1,6 @@
 local t = require("tests.helpers")
 
+local config = require("nvim-sidebar.config")
 local files = require("nvim-sidebar.sources.files")
 local git = require("nvim-sidebar.fstree.git")
 local path = require("nvim-sidebar.util.path")
@@ -65,7 +66,7 @@ t.test("files view marks open buffers and git statuses", function()
 
     vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "tracked.txt")))
     sidebar.open("files")
-    t.assert_contains(select(2, t.find_line("tracked.txt")), " o")
+    t.assert_contains(select(2, t.find_line("tracked.txt")), " " .. config.options.icons.buffer_open)
 
     local result = files.render({
       mode = "sidebar",
@@ -78,9 +79,9 @@ t.test("files view marks open buffers and git statuses", function()
       end
     end
 
-    t.assert_true(markers.M)
-    t.assert_true(markers.A)
-    t.assert_true(markers["?"])
+    t.assert_true(markers[config.options.icons.git_modified])
+    t.assert_true(markers[config.options.icons.git_added])
+    t.assert_true(markers[config.options.icons.git_untracked])
   end)
 end)
 

@@ -367,11 +367,11 @@ Default options:
       file = "",
       folder_closed = "",
       folder_open = "",
-      modified = "*",
-      buffer_open = "o",
-      git_modified = "M",
-      git_added = "A",
-      git_untracked = "?",
+      modified = "•",
+      buffer_open = "◦",
+      git_modified = "•",
+      git_added = "✦",
+      git_untracked = "◇",
     },
 
     keymaps = {

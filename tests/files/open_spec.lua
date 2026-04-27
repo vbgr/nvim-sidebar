@@ -1,5 +1,6 @@
 local t = require("tests.helpers")
 
+local config = require("nvim-sidebar.config")
 local expand = require("nvim-sidebar.fstree.expand")
 local files = require("nvim-sidebar.sources.files")
 local path = require("nvim-sidebar.util.path")
@@ -152,7 +153,7 @@ t.test("files view marks files opened in buffers", function()
 
     sidebar.open("files")
 
-    t.assert_contains(select(2, t.find_line("alpha.txt")), " o")
+    t.assert_contains(select(2, t.find_line("alpha.txt")), " " .. config.options.icons.buffer_open)
   end)
 end)
 
@@ -226,7 +227,7 @@ t.test("files open action refreshes opened marker without stealing focus", funct
 
     t.assert_equal(vim.api.nvim_get_current_win(), editor_winid)
     t.assert_equal(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "alpha.txt")
-    t.assert_contains(sidebar_line("alpha.txt"), " o")
+    t.assert_contains(sidebar_line("alpha.txt"), " " .. config.options.icons.buffer_open)
   end)
 end)
 
