@@ -1,0 +1,15 @@
+.git/
+.DS_Store
+**/.DS_Store
+
+.drex/
+.luarocks/
+coverage/
+
+.nvimlog
+luacov.report.out
+luacov.stats.out
+
+*.src.rock
+*.zip
+*.tar.gz

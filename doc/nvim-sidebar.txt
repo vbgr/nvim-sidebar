@@ -1,0 +1,454 @@
+*nvim-sidebar.txt*                              Sidebar plugin for Neovim
+
+==============================================================================
+CONTENTS                                                     *nvim-sidebar*
+
+1. Overview                                  |nvim-sidebar-overview|
+2. Setup                                     |nvim-sidebar-setup|
+3. Commands                                  |nvim-sidebar-commands|
+4. Views                                     |nvim-sidebar-views|
+5. Sources                                   |nvim-sidebar-sources|
+6. Keymaps                                   |nvim-sidebar-keymaps|
+7. File Operations                           |nvim-sidebar-file-operations|
+8. Buffer Operations                         |nvim-sidebar-buffer-operations|
+9. Configuration                             |nvim-sidebar-configuration|
+
+==============================================================================
+OVERVIEW                                             *nvim-sidebar-overview*
+
+nvim-sidebar renders project navigation sources in a scratch buffer.
+
+Built-in sources:
+
+- files: hierarchical filesystem tree rooted at |getcwd()|
+- buffers: flat list of loaded, listed buffers
+
+The files source can be rendered in two ways:
+
+- sidebar view: narrow side window for navigation
+- full tree view: current-window full-width scratch buffer with metadata
+
+The buffers source is rendered in sidebar view only.
+
+The plugin uses |nvim-web-devicons| when available and enabled. If devicons are
+not available, configured fallback icons are used.
+
+The plugin ships a lualine extension named `nvim-sidebar`. Enable it with:
+>
+  require("lualine").setup({
+    extensions = { "nvim-sidebar" },
+  })
+<
+The extension replaces the normal lualine layout for `nvim-sidebar` buffers
+and shows the current directory path for files/full tree views, or `buffers`
+for the buffers view.
+
+==============================================================================
+SETUP                                                   *nvim-sidebar-setup*
+
+Configure nvim-sidebar from Lua:
+>
+  require("nvim-sidebar").setup({
+    width = 50,
+    side = "left",
+    padding_left = 2,
+    sources = { "files", "buffers" },
+    default_source = "files",
+  })
+<
+
+The plugin also sets up user commands automatically from
+`plugin/nvim-sidebar.lua`, so explicit setup is optional if defaults are enough.
+
+==============================================================================
+COMMANDS                                             *nvim-sidebar-commands*
+
+                                                        *:NvimSidebar*
+:NvimSidebar [files|buffers]
+        Open sidebar view with the selected source. If no source is provided,
+        `default_source` is used.
+
+                                                        *:NvimSidebarToggle*
+:NvimSidebarToggle [files|buffers]
+        Toggle sidebar view. If the sidebar is already open with the requested
+        source, it is closed. Otherwise it is opened or switched.
+
+                                                        *:NvimSidebarRefresh*
+:NvimSidebarRefresh
+        Re-render visible sidebar and full tree views.
+
+                                                        *:NvimSidebarLocate*
+:NvimSidebarLocate [files|buffers]
+        Open the selected source and position the cursor on the current editor
+        file or buffer. Filesystem locate expands parent directories first.
+
+                                                        *:NvimSidebarTree*
+:NvimSidebarTree
+        Open the files source in full tree view in the current window.
+
+==============================================================================
+VIEWS                                                   *nvim-sidebar-views*
+
+SIDEBAR VIEW                                     *nvim-sidebar-sidebar-view*
+
+Sidebar view is a vertical split. Its side and width are controlled by
+`side` and `width`. Rendered rows are shifted by `padding_left` spaces.
+
+Sidebar buffers are unlisted scratch buffers with filetype `nvim-sidebar`.
+The buffer name is:
+
+- current directory path for the files source, shortened like `:~`
+- `buffers` for the buffers source
+
+Closing behavior:
+
+- `q` closes the sidebar by default
+- if the last normal window is about to close, the sidebar closes first
+- if the sidebar becomes the only remaining window, it quits with the tab
+
+FULL TREE VIEW                                 *nvim-sidebar-full-tree-view*
+
+Full tree view renders the files source in the current window as a full-width
+scratch buffer. Open it with |:NvimSidebarTree| or:
+>
+  require("nvim-sidebar").open_full_tree()
+<
+
+Full tree view uses the same tree state, search state, actions, and keymaps as
+the files sidebar, but adds metadata columns configured by
+`tree.full_columns`.
+
+Default full tree columns:
+>
+  { "size", "type", "modified" }
+<
+
+For directories, size and type use `tree.directory_size` and
+`tree.directory_type`. By default these are `--` and `Folder`.
+
+==============================================================================
+SOURCES                                               *nvim-sidebar-sources*
+
+FILES SOURCE                                     *nvim-sidebar-source-files*
+
+The files source renders |getcwd()| as a tree.
+
+Directory rows contain:
+
+- expanded/collapsed marker
+- directory icon
+- directory name
+- optional right-aligned git marker
+
+File rows contain:
+
+- file icon
+- file name
+- optional opened-buffer marker
+- optional right-aligned git marker
+
+Git markers:
+
+- `M`: modified
+- `A`: added
+- `?`: untracked
+
+Directories are sorted before files. Entries are filtered by
+`tree.exclude_patterns` before rendering.
+
+Expansion state is process-local and is preserved while Neovim is running.
+It is not persisted between Neovim runs.
+
+BUFFERS SOURCE                                 *nvim-sidebar-source-buffers*
+
+The buffers source renders loaded, listed buffers.
+
+Each row contains:
+
+- buffer number
+- file icon
+- modified marker when the buffer is modified
+- file name, or `[No Name]`
+
+If two listed buffers have the same file name, only those duplicated names are
+shown with their parent directory, for example `src/init.lua`.
+
+The buffers source supports opening buffers, locating the previous editor
+buffer, search, and yanking buffer names.
+
+The current editor buffer is highlighted while focus is outside the buffers
+sidebar. When the buffers sidebar is focused, the normal cursor line is used
+instead.
+
+==============================================================================
+KEYMAPS                                               *nvim-sidebar-keymaps*
+
+Default mappings are buffer-local to nvim-sidebar buffers.
+
+Files source mappings:
+>
+  o    Open file or expand/collapse directory
+  O    Collapse directory or parent directory
+  /    Search
+  a    New file
+  A    New directory
+  d    Trash selected files/directories
+  c    Copy selected files/directories
+  x    Cut selected files/directories
+  p    Paste copied/cut files/directories
+  y    Yank file/directory names
+  Y    Yank paths relative to getcwd()
+  D    Duplicate files/directories
+  R    Rename file/directory
+  L    Locate current editor file
+  r    Refresh
+  q    Close
+<
+
+Buffers source mappings:
+>
+  o    Open selected buffer
+  /    Search
+  y    Yank buffer names
+  L    Locate current editor buffer
+  r    Refresh
+  q    Close
+<
+
+Mappings for `d`, `c`, `x`, `y`, `Y`, and `D` support Visual selection where
+the action is valid for the active source.
+
+All mappings are configurable through `keymaps`.
+
+==============================================================================
+FILE OPERATIONS                               *nvim-sidebar-file-operations*
+
+OPEN                                                    *nvim-sidebar-open*
+
+On a directory, open toggles expanded state and refreshes the tree.
+
+On a file, open switches back to the previous editor window and edits the file.
+If the file is already loaded, Neovim opens that file buffer normally. The
+files sidebar is refreshed so the opened-buffer marker is updated immediately.
+
+COLLAPSE                                            *nvim-sidebar-collapse*
+
+Collapse behavior depends on the current row:
+
+- expanded directory: collapse that directory
+- file: collapse its parent directory
+- collapsed directory: collapse its parent directory
+
+After collapsing, the cursor is positioned on the directory that remains
+visible.
+
+LOCATE                                                *nvim-sidebar-locate*
+
+Locate clears search, expands all parent directories for the current editor
+file, opens the files source, and positions the cursor on that file.
+
+If the current buffer has no file path or is outside |getcwd()|, a warning is
+shown.
+
+SEARCH                                                *nvim-sidebar-search*
+
+Search is fuzzy and uses `search.case_sensitive`. It filters rendered rows by
+entry name or relative path.
+
+For the files source, search only sees already-expanded directories. It does
+not expand collapsed directories by itself.
+
+NEW FILE                                          *nvim-sidebar-new-file*
+
+Prompts for a file name and creates it below the selected directory. If the
+current row is a file, the new file is created beside it.
+
+NEW DIRECTORY                                *nvim-sidebar-new-directory*
+
+Prompts for a directory name and creates it below the selected directory. If
+the current row is a file, the new directory is created beside it.
+
+TRASH                                                  *nvim-sidebar-trash*
+
+Trash sends selected paths to `trash_cmd`.
+
+`trash_cmd` must be configured. It can be a string command or a list used with
+|system()|. The selected path is appended as the final argument.
+
+Visual selection is supported.
+
+COPY, CUT, PASTE                              *nvim-sidebar-copy-cut-paste*
+
+Copy and cut store selected paths in plugin state. Paste copies or moves them
+into the selected directory. If the current row is a file, paste targets its
+parent directory.
+
+Copy recursively copies directories. Cut moves paths and clears the plugin
+clipboard after paste.
+
+If the natural paste target already exists, paste uses a unique copy name
+instead of overwriting:
+>
+  {original name} copy
+  {original name} copy 2
+<
+
+Visual selection is supported for copy and cut.
+
+RENAME                                                *nvim-sidebar-rename*
+
+Rename prompts for a new basename and renames the selected file or directory
+inside its current parent directory. If the target already exists, a warning is
+shown and the source is left unchanged.
+
+YANK NAME                                      *nvim-sidebar-yank-name*
+
+Yank file or directory basenames into the active register. Visual selection is
+supported.
+
+YANK PATH                                      *nvim-sidebar-yank-path*
+
+Yank paths relative to |getcwd()| into the active register. Visual selection is
+supported.
+
+DUPLICATE                                      *nvim-sidebar-duplicate*
+
+Duplicate creates a deep copy next to each selected path.
+
+The first copy target is:
+>
+  {original name} copy
+<
+
+If that target already exists, numbered names are used:
+>
+  {original name} copy 2
+  {original name} copy 3
+<
+
+Visual selection is supported.
+
+==============================================================================
+BUFFER OPERATIONS                           *nvim-sidebar-buffer-operations*
+
+OPEN BUFFER                                      *nvim-sidebar-open-buffer*
+
+Open switches back to the previous editor window and sets the selected buffer
+as the current buffer.
+
+LOCATE BUFFER                                  *nvim-sidebar-locate-buffer*
+
+Locate clears search, opens the buffers source, and positions the cursor on
+the current editor buffer.
+
+SEARCH BUFFERS                                *nvim-sidebar-search-buffers*
+
+Search is fuzzy and filters by buffer name or full buffer path.
+
+YANK BUFFER NAME                          *nvim-sidebar-yank-buffer-name*
+
+Yank selected buffer names into the active register. Visual selection is
+supported.
+
+==============================================================================
+CONFIGURATION                                   *nvim-sidebar-configuration*
+
+Default options:
+>
+  {
+    width = 40,
+    side = "left",
+    padding_left = 2,
+    default_source = "files",
+    sources = { "files", "buffers" },
+
+    icons = {
+      devicons = true,
+      file = "",
+      folder_closed = "",
+      folder_open = "",
+      modified = "•",
+      buffer_open = "◦",
+      git_modified = "•",
+      git_added = "✦",
+      git_untracked = "◇",
+    },
+
+    keymaps = {
+      open = "o",
+      collapse = "O",
+      search = "/",
+      new_file = "a",
+      new_directory = "A",
+      trash = "d",
+      copy = "c",
+      cut = "x",
+      paste = "p",
+      yank_name = "y",
+      yank_path = "Y",
+      duplicate = "D",
+      rename = "R",
+      locate = "L",
+      refresh = "r",
+      close = "q",
+    },
+
+    tree = {
+      indent_width = 2,
+      indent_markers = false,
+      exclude_patterns = {
+        "^%.git$",
+        "^%.DS_Store$",
+        "%.pyc$",
+        "^__pycache__$",
+        "^node_modules$",
+      },
+      directory_size = "-/-",
+      directory_type = "Folder",
+      full_columns = { "size", "type", "modified" },
+      date_format = "%Y-%m-%d %H:%M",
+    },
+
+    search = {
+      case_sensitive = false,
+    },
+
+    trash_cmd = nil,
+  }
+<
+
+                                                        *nvim-sidebar-exclude*
+`tree.exclude_patterns` is a list of Lua patterns matched against each entry
+basename. It is not shell glob syntax. Use `%.pyc$`, not `*.pyc`.
+
+Example:
+>
+  require("nvim-sidebar").setup({
+    tree = {
+      exclude_patterns = {
+        "^%.git$",
+        "^dist$",
+        "%.log$",
+      },
+    },
+  })
+<
+
+                                                        *nvim-sidebar-columns*
+`tree.full_columns` controls full tree metadata columns. Supported values are:
+
+- `size`
+- `type`
+- `modified`
+
+                                                        *nvim-sidebar-trash-cmd*
+`trash_cmd` configures the external trash command. When set to a list, the
+selected path is appended:
+>
+  require("nvim-sidebar").setup({
+    trash_cmd = { "trash" },
+  })
+<
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:

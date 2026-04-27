@@ -1,0 +1,68 @@
+local buffer = require("nvim-sidebar.ui.buffer")
+local cursor = require("nvim-sidebar.ui.cursor")
+local state = require("nvim-sidebar.state")
+local window = require("nvim-sidebar.ui.window")
+
+local M = {}
+
+local ns = vim.api.nvim_create_namespace("nvim-sidebar")
+
+local function target_buffer(mode)
+  if mode == "full" then
+    return state.full.bufnr
+  end
+
+  return state.sidebar.bufnr
+end
+
+local function apply_highlights(bufnr, highlights)
+  vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+
+  for _, highlight in ipairs(highlights or {}) do
+    if highlight.virt_text ~= nil then
+      vim.api.nvim_buf_set_extmark(bufnr, ns, highlight.line - 1, 0, {
+        virt_text = {
+          {
+            highlight.virt_text,
+            highlight.group,
+          },
+        },
+        virt_text_pos = "right_align",
+      })
+    else
+      vim.api.nvim_buf_add_highlight(
+        bufnr,
+        ns,
+        highlight.group,
+        highlight.line - 1,
+        highlight.col_start or 0,
+        highlight.col_end or -1
+      )
+    end
+  end
+end
+
+function M.render_source(source, mode)
+  state.render_mode = mode
+
+  local bufnr = target_buffer(mode)
+  local name = type(source.display_name) == "function" and source.display_name() or source.name
+  local result = source.render({
+    mode = mode,
+  })
+
+  vim.b[bufnr].nvim_sidebar_title = name
+  buffer.set_name(bufnr, name)
+  window.set_title(mode, name)
+  buffer.set_lines(bufnr, result.lines)
+  state.set_items(bufnr, result.items)
+  apply_highlights(bufnr, result.highlights)
+  if type(source.after_render) == "function" then
+    source.after_render(bufnr, {
+      mode = mode,
+    })
+  end
+  cursor.restore(bufnr)
+end
+
+return M

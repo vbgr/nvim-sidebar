@@ -1,3 +1,18 @@
+# Neovim logs
+.nvimlog
+
+.DS_Store
+.luacov-html
+.luacov
+
+# Coverage output
+coverage/
+luacov.report.out
+luacov.stats.out
+
+# Local LuaRocks tree
+.luarocks/
+
 # Compiled Lua sources
 luac.out
 
@@ -38,4 +53,3 @@ luac.out
 *.i*86
 *.x86_64
 *.hex
-
