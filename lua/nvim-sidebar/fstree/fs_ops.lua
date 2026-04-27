@@ -31,26 +31,21 @@ local function parent_dir(item)
   return path.dirname(item.path)
 end
 
+local function command_executable(command)
+  local executable = command[1]
+
+  return executable ~= nil and executable ~= "" and vim.fn.executable(executable) == 1
+end
+
 local function unique_path(target)
   if uv.fs_stat(target) == nil then
     return target
   end
 
-  local dir = path.dirname(target)
-  local base = path.basename(target)
-  local stem = base
-  local ext = ""
-  local dot = base:match("^.*()%.")
-
-  if dot ~= nil and dot > 1 then
-    stem = base:sub(1, dot - 1)
-    ext = base:sub(dot)
-  end
-
   local index = 2
 
   while true do
-    local candidate = path.join(dir, string.format("%s copy %d%s", stem, index, ext))
+    local candidate = string.format("%s %d", target, index)
 
     if uv.fs_stat(candidate) == nil then
       return candidate
@@ -156,10 +151,23 @@ function M.trash(items)
       and vim.deepcopy(config.options.trash_cmd)
     or { config.options.trash_cmd }
 
+  if not command_executable(command) then
+    notify.error("trash_cmd is not executable: " .. tostring(command[1]))
+    return
+  end
+
   for _, selected_path in ipairs(paths) do
-    local result = vim.fn.system(vim.list_extend(vim.deepcopy(command), {
-      selected_path,
-    }))
+    local ok, result = pcall(
+      vim.fn.system,
+      vim.list_extend(vim.deepcopy(command), {
+        selected_path,
+      })
+    )
+
+    if not ok then
+      notify.error(result)
+      return
+    end
 
     if vim.v.shell_error ~= 0 then
       notify.error(result)

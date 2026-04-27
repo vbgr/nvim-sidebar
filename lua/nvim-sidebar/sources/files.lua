@@ -70,7 +70,8 @@ local function git_highlight(status)
 end
 
 local function sidebar_line(node)
-  local indent = string.rep(" ", node.depth * config.options.tree.indent_width)
+  local indent =
+    string.rep(" ", config.options.padding_left + node.depth * config.options.tree.indent_width)
   local marker = ""
 
   if node.kind == "directory" then
@@ -81,8 +82,23 @@ local function sidebar_line(node)
   end
 
   local open_marker = node.open_buffer and (" " .. config.options.icons.buffer_open) or ""
+  local icon = node.icon ~= "" and (node.icon .. " ") or ""
 
-  return indent .. marker .. " " .. node.icon .. node.name .. open_marker
+  return indent .. marker .. " " .. icon .. node.name .. open_marker
+end
+
+local function sidebar_icon_columns(node)
+  if node.icon == "" then
+    return nil, nil
+  end
+
+  local prefix = string.rep(
+    " ",
+    config.options.padding_left + node.depth * config.options.tree.indent_width
+  ) .. config.options.icons.file .. " "
+  local col_start = #prefix
+
+  return col_start, col_start + #node.icon
 end
 
 local function pad_left(value, width)
@@ -195,6 +211,17 @@ function M.render(ctx)
         table.insert(highlights, {
           line = #lines,
           group = "NvimSidebarDirectory",
+        })
+      end
+
+      local icon_col_start, icon_col_end = sidebar_icon_columns(node)
+
+      if icon_col_start ~= nil then
+        table.insert(highlights, {
+          line = #lines,
+          group = node.icon_highlight or "NvimSidebarFileIcon",
+          col_start = icon_col_start,
+          col_end = icon_col_end,
         })
       end
 

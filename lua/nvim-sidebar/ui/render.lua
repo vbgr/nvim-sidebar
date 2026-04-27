@@ -1,6 +1,7 @@
 local buffer = require("nvim-sidebar.ui.buffer")
 local cursor = require("nvim-sidebar.ui.cursor")
 local state = require("nvim-sidebar.state")
+local window = require("nvim-sidebar.ui.window")
 
 local M = {}
 
@@ -50,10 +51,17 @@ function M.render_source(source, mode)
     mode = mode,
   })
 
+  vim.b[bufnr].nvim_sidebar_title = name
   buffer.set_name(bufnr, name)
+  window.set_title(mode, name)
   buffer.set_lines(bufnr, result.lines)
   state.set_items(bufnr, result.items)
   apply_highlights(bufnr, result.highlights)
+  if type(source.after_render) == "function" then
+    source.after_render(bufnr, {
+      mode = mode,
+    })
+  end
   cursor.restore(bufnr)
 end
 

@@ -6,6 +6,7 @@ t.test("config merges user options", function()
   local options = config.setup({
     width = 42,
     side = "right",
+    padding_left = 4,
     default_source = "buffers",
     sources = {
       "buffers",
@@ -23,6 +24,7 @@ t.test("config merges user options", function()
 
   t.assert_equal(options.width, 42)
   t.assert_equal(options.side, "right")
+  t.assert_equal(options.padding_left, 4)
   t.assert_equal(options.default_source, "buffers")
   t.assert_equal(options.sources[1], "buffers")
   t.assert_equal(options.keymaps.copy, "<leader>c")
@@ -37,6 +39,9 @@ t.test("config rejects invalid values", function()
   }))
   t.assert_false(pcall(config.setup, {
     width = 0,
+  }))
+  t.assert_false(pcall(config.setup, {
+    padding_left = -1,
   }))
   t.assert_false(pcall(config.setup, {
     sources = {

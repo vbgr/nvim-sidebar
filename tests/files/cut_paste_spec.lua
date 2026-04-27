@@ -48,4 +48,26 @@ t.test("files cut and paste moves directories recursively", function()
   end)
 end)
 
+t.test("files cut and paste moves last file out of directory", function()
+  t.temp_dir("files-cut-paste-last-file", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "source", "only.txt"), "only")
+    vim.fn.mkdir(path.join(root, "target"), "p")
+
+    sidebar.open("files")
+    files.actions.open(t.item_by_name("source"), {
+      refresh = sidebar.refresh,
+    })
+    t.trigger_normal_mapping(t.line_by_name("only.txt"), "x")
+
+    files.actions.paste(t.item_by_name("target"), {
+      refresh = sidebar.refresh,
+    })
+
+    t.assert_file_missing(path.join(root, "source", "only.txt"))
+    t.assert_file_exists(path.join(root, "target", "only.txt"))
+    t.assert_not_contains(t.item_names(), "only.txt")
+  end)
+end)
+
 t.run_if_direct("tests/files/cut_paste_spec.lua")

@@ -5,6 +5,42 @@ local files = require("nvim-sidebar.sources.files")
 local path = require("nvim-sidebar.util.path")
 local sidebar = require("nvim-sidebar")
 
+local function with_fake_devicons(icon, group, fn)
+  local loaded = package.loaded["nvim-web-devicons"]
+  local preload = package.preload["nvim-web-devicons"]
+
+  package.loaded["nvim-web-devicons"] = {
+    get_icon = function()
+      return icon, group
+    end,
+  }
+  package.preload["nvim-web-devicons"] = nil
+
+  local ok, err = xpcall(fn, debug.traceback)
+
+  package.loaded["nvim-web-devicons"] = loaded
+  package.preload["nvim-web-devicons"] = preload
+
+  if not ok then
+    error(err)
+  end
+end
+
+local function has_highlight(result, group, line, col_start, col_end)
+  for _, highlight in ipairs(result.highlights or {}) do
+    if
+      highlight.group == group
+      and highlight.line == line
+      and highlight.col_start == col_start
+      and highlight.col_end == col_end
+    then
+      return true
+    end
+  end
+
+  return false
+end
+
 t.test("files view renders cwd path, directories first, and directory highlights", function()
   t.temp_dir("files-open", function(root)
     t.open_fixture_tree(root)
@@ -29,6 +65,72 @@ t.test("files view renders cwd path, directories first, and directory highlights
       }),
       "NvimSidebarDirectory"
     ))
+  end)
+end)
+
+t.test("files view renders empty state when cwd has no entries", function()
+  t.temp_dir("files-open-empty", function()
+    t.reset_plugin()
+
+    sidebar.open("files")
+
+    t.assert_equal(t.rendered_text(), "No files")
+  end)
+end)
+
+t.test("files view separates file icons from names and highlights icons", function()
+  with_fake_devicons("I", "DevIconTxt", function()
+    t.temp_dir("files-open-icons", function(root)
+      t.reset_plugin({
+        icons = {
+          devicons = true,
+        },
+      })
+      t.write_file(path.join(root, "alpha.txt"), "alpha")
+
+      local result = files.render({
+        mode = "sidebar",
+      })
+
+      t.assert_equal(result.lines[1], "   I alpha.txt")
+      t.assert_true(has_highlight(result, "DevIconTxt", 1, 3, 4))
+    end)
+  end)
+end)
+
+t.test("files view supports configurable left padding", function()
+  t.temp_dir("files-open-padding", function(root)
+    t.reset_plugin({
+      padding_left = 4,
+    })
+    t.write_file(path.join(root, "alpha.txt"), "alpha")
+
+    local result = files.render({
+      mode = "sidebar",
+    })
+
+    t.assert_equal(result.lines[1], "     alpha.txt")
+  end)
+end)
+
+t.test("files sidebar disables listchars in its window", function()
+  t.temp_dir("files-open-listchars", function(root)
+    t.open_fixture_tree(root)
+    vim.wo.list = true
+
+    sidebar.open("files")
+
+    t.assert_false(vim.wo.list)
+  end)
+end)
+
+t.test("files sidebar uses cwd path as local statusline title", function()
+  t.temp_dir("files-open-title", function(root)
+    t.open_fixture_tree(root)
+
+    sidebar.open("files")
+
+    t.assert_equal(vim.wo.statusline, " " .. vim.fn.fnamemodify(root, ":~"))
   end)
 end)
 

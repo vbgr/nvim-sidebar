@@ -8,8 +8,14 @@ local M = {
   name = "buffers",
 }
 
+local current_ns = vim.api.nvim_create_namespace("nvim-sidebar-current-buffer")
+
 function M.display_name()
   return "buffers"
+end
+
+local function buf_is_valid(bufnr)
+  return bufnr ~= nil and vim.api.nvim_buf_is_valid(bufnr)
 end
 
 local function buffer_name(bufnr)
@@ -48,15 +54,27 @@ local function listed_buffers()
   return buffers
 end
 
+local function icon_text(icon)
+  return icon ~= "" and (icon .. " ") or ""
+end
+
+local function buffer_number_text(bufnr)
+  return string.format("%2d", bufnr)
+end
+
 function M.render()
   local lines = {}
   local items = {}
   local highlights = {}
 
   for _, item in ipairs(listed_buffers()) do
-    local icon = devicons.file(item.path, item.name)
-    local modified = item.modified and config.options.icons.modified or " "
-    local line = string.format("%d %s%s %s", item.bufnr, icon, modified, item.name)
+    local icon, icon_highlight = devicons.file(item.path, item.name)
+    local icon_with_space = icon_text(icon)
+    local modified = item.modified and (config.options.icons.modified .. " ") or ""
+    local padding = string.rep(" ", config.options.padding_left)
+    local buffer_number = buffer_number_text(item.bufnr)
+    local line =
+      string.format("%s%s %s%s%s", padding, buffer_number, icon_with_space, modified, item.name)
 
     table.insert(lines, line)
     items[#lines] = {
@@ -66,10 +84,25 @@ function M.render()
       path = item.path,
     }
 
+    if icon ~= "" then
+      local col_start = #(padding .. buffer_number .. " ")
+
+      table.insert(highlights, {
+        line = #lines,
+        group = icon_highlight or "NvimSidebarFileIcon",
+        col_start = col_start,
+        col_end = col_start + #icon,
+      })
+    end
+
     if item.modified then
+      local col_start = #(padding .. buffer_number .. " " .. icon_with_space)
+
       table.insert(highlights, {
         line = #lines,
         group = "NvimSidebarModified",
+        col_start = col_start,
+        col_end = col_start + #config.options.icons.modified,
       })
     end
   end
@@ -85,6 +118,36 @@ function M.render()
     items = items,
     highlights = highlights,
   }
+end
+
+function M.update_current_highlight(bufnr)
+  bufnr = bufnr or state.sidebar.bufnr
+
+  if not buf_is_valid(bufnr) then
+    return
+  end
+
+  vim.api.nvim_buf_clear_namespace(bufnr, current_ns, 0, -1)
+
+  local current_bufnr = state.previous_buffer()
+
+  if current_bufnr == nil then
+    return
+  end
+
+  for line, item in pairs(state.line_items[bufnr] or {}) do
+    if item.source == "buffers" and item.bufnr == current_bufnr then
+      vim.api.nvim_buf_set_extmark(bufnr, current_ns, line - 1, 0, {
+        line_hl_group = "NvimSidebarCurrentBuffer",
+        priority = 80,
+      })
+      return
+    end
+  end
+end
+
+function M.after_render(bufnr)
+  M.update_current_highlight(bufnr)
 end
 
 M.actions = {}

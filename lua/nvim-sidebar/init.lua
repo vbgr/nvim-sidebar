@@ -10,6 +10,44 @@ local window = require("nvim-sidebar.ui.window")
 local M = {}
 
 local initialized = false
+local pending_buffer_deletes = 0
+
+local function update_buffers_current_highlight()
+  if not window.is_sidebar_open() or state.active_source ~= "buffers" then
+    return
+  end
+
+  sources.get("buffers").update_current_highlight()
+end
+
+local function refresh_buffers_sidebar()
+  if not window.is_sidebar_open() or state.active_source ~= "buffers" then
+    return
+  end
+
+  render.render_source(sources.get("buffers"), "sidebar")
+  keymaps.apply(state.sidebar.bufnr)
+end
+
+local function handle_buffer_delete()
+  pending_buffer_deletes = pending_buffer_deletes + 1
+
+  vim.schedule(function()
+    local ok, err = xpcall(function()
+      if window.is_sidebar_open() then
+        window.ensure_default_editor_buffer()
+      end
+
+      refresh_buffers_sidebar()
+    end, debug.traceback)
+
+    pending_buffer_deletes = math.max(pending_buffer_deletes - 1, 0)
+
+    if not ok then
+      error(err)
+    end
+  end)
+end
 
 local function setup_autocmds()
   local group = vim.api.nvim_create_augroup("NvimSidebar", {
@@ -20,7 +58,13 @@ local function setup_autocmds()
     group = group,
     callback = function()
       state.remember_current_window()
+      update_buffers_current_highlight()
     end,
+  })
+
+  vim.api.nvim_create_autocmd("BufDelete", {
+    group = group,
+    callback = handle_buffer_delete,
   })
 
   vim.api.nvim_create_autocmd("QuitPre", {
@@ -34,6 +78,10 @@ local function setup_autocmds()
     group = group,
     callback = function()
       vim.schedule(function()
+        if pending_buffer_deletes > 0 then
+          return
+        end
+
         window.close_if_sidebar_is_last_window()
       end)
     end,

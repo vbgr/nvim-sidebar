@@ -12,8 +12,4 @@ function M.error(message)
   send(message, vim.log.levels.ERROR)
 end
 
-function M.info(message)
-  send(message, vim.log.levels.INFO)
-end
-
 return M

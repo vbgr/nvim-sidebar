@@ -1,7 +1,18 @@
 local t = require("tests.helpers")
 
+local config = require("nvim-sidebar.config")
 local path = require("nvim-sidebar.util.path")
 local sidebar = require("nvim-sidebar")
+
+local function display_end(line, text)
+  local _, end_col = line:find(text, 1, true)
+
+  if end_col == nil then
+    return nil
+  end
+
+  return vim.fn.strdisplaywidth(line:sub(1, end_col))
+end
 
 t.test("full tree renders configurable metadata columns and aligned size column", function()
   t.temp_dir("files-full-tree", function(root)
@@ -20,9 +31,10 @@ t.test("full tree renders configurable metadata columns and aligned size column"
     sidebar.open_full_tree()
 
     local rendered = t.rendered_text()
+    local directory_size = config.options.tree.directory_size
 
     t.assert_contains(rendered, "Folder")
-    t.assert_contains(rendered, "--")
+    t.assert_contains(rendered, directory_size)
     t.assert_contains(rendered, "md")
     t.assert_contains(rendered, "12B")
     t.assert_equal(
@@ -32,10 +44,33 @@ t.test("full tree renders configurable metadata columns and aligned size column"
 
     local dir_line = select(2, t.find_line("docs"))
     local file_line = select(2, t.find_line("README.md"))
-    local dash_end = dir_line:find("%-%-", 1, false) + 1
-    local size_end = file_line:find("12B", 1, false) + 2
+    local directory_size_end = display_end(dir_line, directory_size)
+    local size_end = display_end(file_line, "12B")
 
-    t.assert_equal(size_end, dash_end)
+    t.assert_equal(size_end, directory_size_end)
+  end)
+end)
+
+t.test("full tree disables listchars in its window", function()
+  t.temp_dir("files-full-tree-listchars", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "README.md"), "hello world")
+    vim.wo.list = true
+
+    sidebar.open_full_tree()
+
+    t.assert_false(vim.wo.list)
+  end)
+end)
+
+t.test("full tree uses cwd path as local statusline title", function()
+  t.temp_dir("files-full-tree-title", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "README.md"), "hello world")
+
+    sidebar.open_full_tree()
+
+    t.assert_equal(vim.wo.statusline, " " .. vim.fn.fnamemodify(root, ":~"))
   end)
 end)
 

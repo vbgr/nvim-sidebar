@@ -1,8 +1,9 @@
 local M = {}
 
 M.defaults = {
-  width = 50,
+  width = 40,
   side = "left",
+  padding_left = 2,
   default_source = "files",
   sources = {
     "files",
@@ -11,8 +12,8 @@ M.defaults = {
   icons = {
     devicons = true,
     file = "",
-    folder_closed = "+",
-    folder_open = "-",
+    folder_closed = "",
+    folder_open = "",
     modified = "*",
     buffer_open = "o",
     git_modified = "M",
@@ -46,7 +47,7 @@ M.defaults = {
       "^__pycache__$",
       "^node_modules$",
     },
-    directory_size = "--",
+    directory_size = "-/-",
     directory_type = "Folder",
     full_columns = {
       "size",
@@ -97,6 +98,10 @@ local function validate_options(opts)
 
   if type(opts.width) ~= "number" or opts.width < 1 then
     error("nvim-sidebar: width must be a positive number", 3)
+  end
+
+  if type(opts.padding_left) ~= "number" or opts.padding_left < 0 then
+    error("nvim-sidebar: padding_left must be a non-negative number", 3)
   end
 
   for _, source in ipairs(opts.sources) do

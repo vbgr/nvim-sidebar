@@ -2,6 +2,29 @@ local t = require("tests.helpers")
 
 local fs_ops = require("nvim-sidebar.fstree.fs_ops")
 local path = require("nvim-sidebar.util.path")
+require("nvim-sidebar")
+
+local function capture_notify(fn)
+  local notify = vim.notify
+  local messages = {}
+
+  vim.notify = function(message, level)
+    table.insert(messages, {
+      message = message,
+      level = level,
+    })
+  end
+
+  local ok, err = xpcall(fn, debug.traceback)
+
+  vim.notify = notify
+
+  if not ok then
+    error(err)
+  end
+
+  return messages
+end
 
 t.test("files duplicate creates a file copy next to original", function()
   t.temp_dir("files-duplicate-file", function(root)
@@ -15,6 +38,40 @@ t.test("files duplicate creates a file copy next to original", function()
     })
 
     t.assert_file_exists(path.join(root, "dup.txt copy"))
+  end)
+end)
+
+t.test("files duplicate creates numbered copy when copy already exists", function()
+  t.temp_dir("files-duplicate-numbered", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "dup"), "dup")
+    t.write_file(path.join(root, "dup copy"), "existing")
+
+    fs_ops.duplicate({
+      {
+        path = path.join(root, "dup"),
+      },
+    })
+
+    t.assert_file_exists(path.join(root, "dup copy 2"))
+  end)
+end)
+
+t.test("files duplicate reports missing source", function()
+  t.temp_dir("files-duplicate-missing", function(root)
+    t.reset_plugin()
+
+    local messages = capture_notify(function()
+      fs_ops.duplicate({
+        {
+          path = path.join(root, "missing.txt"),
+        },
+      })
+    end)
+
+    t.assert_equal(#messages, 1)
+    t.assert_equal(messages[1].level, vim.log.levels.ERROR)
+    t.assert_contains(messages[1].message, "source does not exist")
   end)
 end)
 

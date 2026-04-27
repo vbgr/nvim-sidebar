@@ -6,6 +6,14 @@ local scanner = require("nvim-sidebar.fstree.scanner")
 
 local M = {}
 
+local function file_icon(entry)
+  if entry.kind == "directory" then
+    return "", nil
+  end
+
+  return devicons.file(entry.path, entry.name)
+end
+
 local function open_buffer_paths()
   local paths = {}
 
@@ -23,6 +31,7 @@ end
 local function collect(nodes, root, dir, depth, open_buffers, git_status)
   for _, entry in ipairs(scanner.scan(dir)) do
     local is_directory = entry.kind == "directory"
+    local icon, icon_highlight = file_icon(entry)
     local relative_path = path.relative(root, entry.path)
     local stat = entry.stat or {}
     local node = {
@@ -35,7 +44,8 @@ local function collect(nodes, root, dir, depth, open_buffers, git_status)
       expanded = is_directory and expand.is_expanded(entry.path) or false,
       open_buffer = open_buffers[entry.path] or false,
       git_status = git.for_path(git_status, entry.path),
-      icon = is_directory and "" or devicons.file(entry.path, entry.name),
+      icon = icon,
+      icon_highlight = icon_highlight,
       size = stat.size,
       extension = is_directory and "" or path.extension(entry.name),
       mtime = stat.mtime,
