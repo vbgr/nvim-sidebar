@@ -30,6 +30,41 @@ local function listed_editor_buffers()
   return buffers
 end
 
+local function set_editor_window_options()
+  vim.wo.number = true
+  vim.wo.relativenumber = true
+  vim.wo.signcolumn = "yes"
+  vim.wo.wrap = true
+  vim.wo.list = true
+  vim.wo.spell = true
+  vim.wo.foldenable = true
+  vim.wo.cursorline = false
+  vim.wo.statusline = "editor-status"
+end
+
+local function assert_full_window_options()
+  t.assert_false(vim.wo.number)
+  t.assert_false(vim.wo.relativenumber)
+  t.assert_equal(vim.wo.signcolumn, "no")
+  t.assert_false(vim.wo.wrap)
+  t.assert_false(vim.wo.list)
+  t.assert_false(vim.wo.spell)
+  t.assert_false(vim.wo.foldenable)
+  t.assert_true(vim.wo.cursorline)
+end
+
+local function assert_editor_window_options()
+  t.assert_true(vim.wo.number)
+  t.assert_true(vim.wo.relativenumber)
+  t.assert_equal(vim.wo.signcolumn, "yes")
+  t.assert_true(vim.wo.wrap)
+  t.assert_true(vim.wo.list)
+  t.assert_true(vim.wo.spell)
+  t.assert_true(vim.wo.foldenable)
+  t.assert_false(vim.wo.cursorline)
+  t.assert_equal(vim.wo.statusline, "editor-status")
+end
+
 t.test("open_sidebar reuses existing window and reapplies configured width", function()
   t.reset_plugin({
     width = 30,
@@ -41,6 +76,7 @@ t.test("open_sidebar reuses existing window and reapplies configured width", fun
   assert(editor_winid ~= nil, "expected an editor window next to the sidebar")
 
   vim.api.nvim_win_set_width(first_winid, 12)
+  vim.wo[first_winid].cursorline = false
   vim.api.nvim_set_current_win(editor_winid)
 
   local second_winid = window.open_sidebar()
@@ -48,6 +84,7 @@ t.test("open_sidebar reuses existing window and reapplies configured width", fun
   t.assert_equal(second_winid, first_winid)
   t.assert_equal(vim.api.nvim_get_current_win(), first_winid)
   t.assert_equal(vim.api.nvim_win_get_width(first_winid), 30)
+  t.assert_true(vim.wo[first_winid].cursorline)
 end)
 
 t.test("focus_sidebar returns nil when closed and focuses sidebar when open", function()
@@ -64,6 +101,15 @@ t.test("focus_sidebar returns nil when closed and focuses sidebar when open", fu
 
   t.assert_equal(window.focus_sidebar(), sidebar_winid)
   t.assert_equal(vim.api.nvim_get_current_win(), sidebar_winid)
+end)
+
+t.test("open_sidebar enables cursorline for navigation", function()
+  t.reset_plugin()
+  vim.wo.cursorline = false
+
+  window.open_sidebar()
+
+  t.assert_true(vim.wo.cursorline)
 end)
 
 t.test("close_sidebar is a no-op when sidebar is closed", function()
@@ -106,6 +152,7 @@ t.test("close_full restores previous editor buffer and clears full state", funct
     t.write_file(path.join(root, "alpha.txt"), "alpha")
 
     vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
+    set_editor_window_options()
 
     local editor_bufnr = vim.api.nvim_get_current_buf()
 
@@ -113,13 +160,16 @@ t.test("close_full restores previous editor buffer and clears full state", funct
     window.open_full()
 
     local full_bufnr = state.full.bufnr
+    assert_full_window_options()
 
     window.close_full()
 
     t.assert_equal(vim.api.nvim_get_current_buf(), editor_bufnr)
+    assert_editor_window_options()
     t.assert_false(vim.api.nvim_buf_is_valid(full_bufnr))
     t.assert_equal(state.full.bufnr, nil)
     t.assert_equal(state.full.winid, nil)
+    t.assert_equal(state.full.window_options, nil)
   end)
 end)
 

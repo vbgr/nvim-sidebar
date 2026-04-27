@@ -8,14 +8,16 @@ local M = {
   name = "buffers",
 }
 
-local current_ns = vim.api.nvim_create_namespace("nvim-sidebar-current-buffer")
-
 function M.display_name()
   return "buffers"
 end
 
 local function buf_is_valid(bufnr)
   return bufnr ~= nil and vim.api.nvim_buf_is_valid(bufnr)
+end
+
+local function win_is_valid(winid)
+  return winid ~= nil and vim.api.nvim_win_is_valid(winid)
 end
 
 local function buffer_name(bufnr)
@@ -158,16 +160,14 @@ function M.render()
   }
 end
 
-function M.update_current_highlight(bufnr)
+function M.sync_current_cursor(bufnr)
   bufnr = bufnr or state.sidebar.bufnr
 
-  if not buf_is_valid(bufnr) then
+  if not buf_is_valid(bufnr) or not win_is_valid(state.sidebar.winid) then
     return
   end
 
-  vim.api.nvim_buf_clear_namespace(bufnr, current_ns, 0, -1)
-
-  if vim.api.nvim_get_current_buf() == bufnr then
+  if vim.api.nvim_win_get_buf(state.sidebar.winid) ~= bufnr then
     return
   end
 
@@ -179,9 +179,9 @@ function M.update_current_highlight(bufnr)
 
   for line, item in pairs(state.line_items[bufnr] or {}) do
     if item.source == "buffers" and item.bufnr == current_bufnr then
-      vim.api.nvim_buf_set_extmark(bufnr, current_ns, line - 1, 0, {
-        line_hl_group = "NvimSidebarCurrentBuffer",
-        priority = 80,
+      pcall(vim.api.nvim_win_set_cursor, state.sidebar.winid, {
+        line,
+        0,
       })
       return
     end
@@ -189,7 +189,7 @@ function M.update_current_highlight(bufnr)
 end
 
 function M.after_render(bufnr)
-  M.update_current_highlight(bufnr)
+  M.sync_current_cursor(bufnr)
 end
 
 M.actions = {}

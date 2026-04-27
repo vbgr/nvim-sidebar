@@ -12,6 +12,40 @@ local function buf_is_valid(bufnr)
   return bufnr ~= nil and vim.api.nvim_buf_is_valid(bufnr)
 end
 
+local full_window_options = {
+  "number",
+  "relativenumber",
+  "signcolumn",
+  "wrap",
+  "list",
+  "spell",
+  "foldenable",
+  "cursorline",
+  "statusline",
+}
+
+local function save_window_options(winid)
+  local options = {}
+
+  for _, name in ipairs(full_window_options) do
+    options[name] = vim.wo[winid][name]
+  end
+
+  return options
+end
+
+local function restore_window_options(winid, options)
+  if not win_is_valid(winid) or options == nil then
+    return
+  end
+
+  for name, value in pairs(options) do
+    pcall(function()
+      vim.wo[winid][name] = value
+    end)
+  end
+end
+
 local function apply_window_options(winid)
   vim.wo[winid].number = false
   vim.wo[winid].relativenumber = false
@@ -20,6 +54,7 @@ local function apply_window_options(winid)
   vim.wo[winid].list = false
   vim.wo[winid].spell = false
   vim.wo[winid].foldenable = false
+  vim.wo[winid].cursorline = true
 end
 
 local function statusline_title(title)
@@ -70,6 +105,7 @@ function M.open_sidebar()
   if M.is_sidebar_open() then
     vim.api.nvim_set_current_win(state.sidebar.winid)
     vim.api.nvim_win_set_width(state.sidebar.winid, config.options.width)
+    apply_window_options(state.sidebar.winid)
     return state.sidebar.winid
   end
 
@@ -201,6 +237,7 @@ function M.open_full()
   end
 
   state.full.winid = vim.api.nvim_get_current_win()
+  state.full.window_options = save_window_options(state.full.winid)
   state.full.bufnr = buffer.ensure_full()
 
   vim.api.nvim_win_set_buf(state.full.winid, state.full.bufnr)
@@ -210,22 +247,29 @@ function M.open_full()
 end
 
 function M.close_full()
+  local full_winid = state.full.winid
+  local window_options = state.full.window_options
+
   if not buf_is_valid(state.full.bufnr) then
+    restore_window_options(full_winid, window_options)
     state.full.bufnr = nil
     state.full.winid = nil
+    state.full.window_options = nil
     return
   end
 
   local full_bufnr = state.full.bufnr
   local previous_bufnr = state.previous_buffer()
 
-  if win_is_valid(state.full.winid) then
+  if win_is_valid(full_winid) then
     if previous_bufnr ~= nil and previous_bufnr ~= full_bufnr then
-      vim.api.nvim_win_set_buf(state.full.winid, previous_bufnr)
+      vim.api.nvim_win_set_buf(full_winid, previous_bufnr)
     else
-      vim.api.nvim_set_current_win(state.full.winid)
+      vim.api.nvim_set_current_win(full_winid)
       vim.cmd.enew()
     end
+
+    restore_window_options(full_winid, window_options)
   end
 
   pcall(vim.api.nvim_buf_delete, full_bufnr, {
@@ -234,6 +278,7 @@ function M.close_full()
 
   state.full.bufnr = nil
   state.full.winid = nil
+  state.full.window_options = nil
 end
 
 return M

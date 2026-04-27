@@ -52,18 +52,8 @@ local function has_highlight(result, group, line, col_start, col_end)
   return false
 end
 
-local function current_highlight_lines()
-  local ns = vim.api.nvim_create_namespace("nvim-sidebar-current-buffer")
-  local marks = vim.api.nvim_buf_get_extmarks(state.sidebar.bufnr, ns, 0, -1, {
-    details = true,
-  })
-  local lines = {}
-
-  for _, mark in ipairs(marks) do
-    table.insert(lines, mark[2] + 1)
-  end
-
-  return lines
+local function sidebar_cursor_line()
+  return vim.api.nvim_win_get_cursor(state.sidebar.winid)[1]
 end
 
 local function line_by_bufnr(bufnr)
@@ -125,7 +115,8 @@ t.test("buffers view renders listed buffers and modified markers", function()
     t.assert_contains(rendered, config.options.icons.modified .. " beta.txt")
     t.assert_equal(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":~:."), "buffers")
     t.assert_false(t.has_highlight_group(buffers.render(), "NvimSidebarCurrent"))
-    t.assert_equal(#current_highlight_lines(), 0)
+    t.assert_true(vim.wo[state.sidebar.winid].cursorline)
+    t.assert_equal(sidebar_cursor_line(), line_by_bufnr(state.previous_buffer()))
   end)
 end)
 
@@ -137,7 +128,7 @@ t.test("buffers view renders empty state when no listed buffers exist", function
     sidebar.open("buffers")
 
     t.assert_equal(t.rendered_text(), "No buffers")
-    t.assert_equal(#current_highlight_lines(), 0)
+    t.assert_true(vim.wo[state.sidebar.winid].cursorline)
   end)
 end)
 
@@ -206,8 +197,8 @@ t.test("buffers view disambiguates duplicated file names with parent folder", fu
   end)
 end)
 
-t.test("buffers current highlight follows active editor buffer without rerendering", function()
-  t.temp_dir("buffers-open-current-highlight", function(root)
+t.test("buffers cursor follows active editor buffer without rerendering", function()
+  t.temp_dir("buffers-open-current-cursor", function(root)
     t.reset_plugin()
     t.write_file(path.join(root, "alpha.txt"), "alpha")
     t.write_file(path.join(root, "beta.txt"), "beta")
@@ -222,42 +213,42 @@ t.test("buffers current highlight follows active editor buffer without rerenderi
 
     local before_lines = vim.api.nvim_buf_get_lines(state.sidebar.bufnr, 0, -1, false)
 
-    t.assert_equal(#current_highlight_lines(), 0)
+    t.assert_equal(sidebar_cursor_line(), line_by_bufnr(alpha_bufnr))
 
     vim.api.nvim_set_current_win(state.previous_window())
 
-    t.assert_equal(current_highlight_lines()[1], line_by_bufnr(alpha_bufnr))
+    t.assert_equal(sidebar_cursor_line(), line_by_bufnr(alpha_bufnr))
 
     vim.cmd("buffer " .. beta_bufnr)
 
     local after_lines = vim.api.nvim_buf_get_lines(state.sidebar.bufnr, 0, -1, false)
 
     t.assert_equal(table.concat(after_lines, "\n"), table.concat(before_lines, "\n"))
-    t.assert_equal(current_highlight_lines()[1], line_by_bufnr(beta_bufnr))
+    t.assert_equal(sidebar_cursor_line(), line_by_bufnr(beta_bufnr))
   end)
 end)
 
-t.test("buffers current highlight is cleared when buffers sidebar is focused", function()
-  t.temp_dir("buffers-open-current-highlight-focused", function(root)
+t.test("buffers cursor sync does not steal focus", function()
+  t.temp_dir("buffers-open-current-cursor-focus", function(root)
     t.reset_plugin()
     t.write_file(path.join(root, "alpha.txt"), "alpha")
 
     vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
 
     sidebar.open("buffers")
-    vim.api.nvim_set_current_win(state.previous_window())
 
-    t.assert_equal(current_highlight_lines()[1], line_by_bufnr(vim.api.nvim_get_current_buf()))
+    local editor_winid = state.previous_window()
+    vim.api.nvim_set_current_win(editor_winid)
 
-    vim.api.nvim_set_current_win(state.sidebar.winid)
-    buffers.update_current_highlight()
+    buffers.sync_current_cursor()
 
-    t.assert_equal(#current_highlight_lines(), 0)
+    t.assert_equal(vim.api.nvim_get_current_win(), editor_winid)
+    t.assert_equal(sidebar_cursor_line(), line_by_bufnr(vim.api.nvim_get_current_buf()))
   end)
 end)
 
-t.test("buffers current highlight is absent when current buffer is filtered out", function()
-  t.temp_dir("buffers-open-current-highlight-filtered", function(root)
+t.test("buffers cursor is unchanged when current buffer is filtered out", function()
+  t.temp_dir("buffers-open-current-cursor-filtered", function(root)
     t.reset_plugin()
     t.write_file(path.join(root, "alpha.txt"), "alpha")
     t.write_file(path.join(root, "beta.txt"), "beta")
@@ -268,7 +259,8 @@ t.test("buffers current highlight is absent when current buffer is filtered out"
 
     sidebar.open("buffers")
 
-    t.assert_equal(#current_highlight_lines(), 0)
+    t.assert_equal(line_by_bufnr(state.previous_buffer()), nil)
+    t.assert_equal(sidebar_cursor_line(), 1)
   end)
 end)
 
