@@ -178,7 +178,7 @@ local function icon_text(icon)
 end
 
 local function buffer_number_text(bufnr)
-  return string.format("%2d", bufnr)
+  return string.format("%3d", bufnr)
 end
 
 function M.render()

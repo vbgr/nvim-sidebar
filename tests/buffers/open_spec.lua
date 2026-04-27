@@ -131,7 +131,7 @@ t.test("buffers view separates file icons from names and highlights icons", func
       local result = buffers.render()
       local line_number, line = line_with_name(result, "alpha.txt")
       local bufnr = vim.api.nvim_get_current_buf()
-      local buffer_number = string.format("%2d", bufnr)
+      local buffer_number = string.format("%3d", bufnr)
       local icon_col = #(buffer_number .. " ")
 
       t.assert_equal(line, string.format("  %s B alpha.txt", buffer_number))
@@ -154,7 +154,7 @@ t.test("buffers view supports configurable left padding", function()
 
     t.assert_contains(
       line,
-      "    " .. string.format("%2d", vim.api.nvim_get_current_buf()) .. " alpha.txt"
+      "    " .. string.format("%3d", vim.api.nvim_get_current_buf()) .. " alpha.txt"
     )
   end)
 end)
