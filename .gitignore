@@ -3,7 +3,6 @@
 
 .DS_Store
 .luacov-html
-.luacov
 
 # Coverage output
 coverage/
