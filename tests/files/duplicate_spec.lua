@@ -2,7 +2,7 @@ local t = require("tests.helpers")
 
 local fs_ops = require("nvim-sidebar.fstree.fs_ops")
 local path = require("nvim-sidebar.util.path")
-require("nvim-sidebar")
+local sidebar = require("nvim-sidebar")
 
 local function capture_notify(fn)
   local notify = vim.notify
@@ -87,6 +87,20 @@ t.test("files duplicate recursively copies directories next to original", functi
     })
 
     t.assert_file_exists(path.join(root, "dir-src copy", "child.txt"))
+  end)
+end)
+
+t.test("files visual duplicate duplicates all selected files", function()
+  t.temp_dir("files-duplicate-visual", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "alpha.txt"), "alpha")
+    t.write_file(path.join(root, "beta.txt"), "beta")
+
+    sidebar.open("files")
+    t.trigger_visual_mapping(t.line_by_name("alpha.txt"), t.line_by_name("beta.txt"), "D")
+
+    t.assert_file_exists(path.join(root, "alpha.txt copy"))
+    t.assert_file_exists(path.join(root, "beta.txt copy"))
   end)
 end)
 

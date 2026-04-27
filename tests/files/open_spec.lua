@@ -4,6 +4,7 @@ local expand = require("nvim-sidebar.fstree.expand")
 local files = require("nvim-sidebar.sources.files")
 local path = require("nvim-sidebar.util.path")
 local sidebar = require("nvim-sidebar")
+local state = require("nvim-sidebar.state")
 
 local function with_fake_devicons(icon, group, fn)
   local loaded = package.loaded["nvim-web-devicons"]
@@ -39,6 +40,16 @@ local function has_highlight(result, group, line, col_start, col_end)
   end
 
   return false
+end
+
+local function sidebar_line(pattern)
+  for _, line in ipairs(vim.api.nvim_buf_get_lines(state.sidebar.bufnr, 0, -1, false)) do
+    if line:find(pattern, 1, true) then
+      return line
+    end
+  end
+
+  return nil
 end
 
 t.test("files view renders cwd path, directories first, and directory highlights", function()
@@ -182,6 +193,40 @@ t.test("files open action expands directories and opens files in previous window
     })
 
     t.assert_equal(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "child.txt")
+  end)
+end)
+
+t.test("files open action handles file names with spaces", function()
+  t.temp_dir("files-open-spaces", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "file with spaces.txt"), "spaces")
+
+    sidebar.open("files")
+    files.actions.open(t.item_by_name("file with spaces.txt"), {
+      mode = "sidebar",
+      refresh = sidebar.refresh,
+    })
+
+    t.assert_equal(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "file with spaces.txt")
+  end)
+end)
+
+t.test("files open action refreshes opened marker without stealing focus", function()
+  t.temp_dir("files-open-action-marker", function(root)
+    t.open_fixture_tree(root)
+
+    sidebar.open("files")
+
+    local editor_winid = state.previous_window()
+
+    files.actions.open(t.item_by_name("alpha.txt"), {
+      mode = "sidebar",
+      refresh = sidebar.refresh,
+    })
+
+    t.assert_equal(vim.api.nvim_get_current_win(), editor_winid)
+    t.assert_equal(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "alpha.txt")
+    t.assert_contains(sidebar_line("alpha.txt"), " o")
   end)
 end)
 

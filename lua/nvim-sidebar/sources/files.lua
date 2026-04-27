@@ -8,6 +8,7 @@ local model = require("nvim-sidebar.fstree.model")
 local notify = require("nvim-sidebar.util.notify")
 local path = require("nvim-sidebar.util.path")
 local state = require("nvim-sidebar.state")
+local window = require("nvim-sidebar.ui.window")
 
 local M = {
   name = "files",
@@ -181,6 +182,40 @@ local function full_line(node, widths)
   return left .. string.rep(" ", padding) .. right
 end
 
+local function action_mode(ctx)
+  if ctx ~= nil and ctx.mode ~= nil then
+    return ctx.mode
+  end
+
+  if vim.api.nvim_get_current_buf() == state.full.bufnr then
+    return "full"
+  end
+
+  return "sidebar"
+end
+
+local function refresh_sidebar_preserving_current_window(ctx)
+  if ctx == nil or ctx.refresh == nil then
+    return
+  end
+
+  local current_winid = vim.api.nvim_get_current_win()
+  local sidebar_winid = state.sidebar.winid
+
+  if sidebar_winid ~= nil and vim.api.nvim_win_is_valid(sidebar_winid) then
+    vim.api.nvim_set_current_win(sidebar_winid)
+    ctx.refresh()
+
+    if vim.api.nvim_win_is_valid(current_winid) then
+      vim.api.nvim_set_current_win(current_winid)
+    end
+
+    return
+  end
+
+  ctx.refresh()
+end
+
 function M.render(ctx)
   local root = vim.fn.getcwd()
   local git_status = git.status(root)
@@ -278,6 +313,8 @@ function M.actions.open(item, ctx)
     return
   end
 
+  local mode = action_mode(ctx)
+
   if item.kind == "directory" then
     expand.toggle(item.path)
     state.cursor.restore_path = item.path
@@ -285,13 +322,21 @@ function M.actions.open(item, ctx)
     return
   end
 
-  local winid = state.previous_window()
+  if mode == "full" then
+    window.close_full()
+  else
+    local winid = state.previous_window()
 
-  if winid ~= nil then
-    vim.api.nvim_set_current_win(winid)
+    if winid ~= nil then
+      vim.api.nvim_set_current_win(winid)
+    end
   end
 
   vim.cmd.edit(vim.fn.fnameescape(item.path))
+
+  if mode == "sidebar" then
+    refresh_sidebar_preserving_current_window(ctx)
+  end
 end
 
 function M.actions.collapse(item, ctx)
@@ -310,6 +355,13 @@ end
 
 function M.actions.new_directory(item, ctx)
   fs_ops.new_directory(item, ctx.refresh)
+end
+
+function M.actions.rename(item, ctx)
+  fs_ops.rename(item, function(target)
+    state.cursor.restore_path = target
+    ctx.refresh()
+  end)
 end
 
 function M.actions.trash(item, ctx)

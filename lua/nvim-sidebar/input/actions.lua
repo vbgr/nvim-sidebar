@@ -18,9 +18,18 @@ local function selected_items(opts)
   return item ~= nil and { item } or {}
 end
 
+local function current_mode()
+  if vim.api.nvim_get_current_buf() == state.full.bufnr then
+    return "full"
+  end
+
+  return "sidebar"
+end
+
 function M.dispatch(action, opts)
   local items = selected_items(opts)
   local source_name = items[1] ~= nil and items[1].source or state.active_source
+  local mode = current_mode()
 
   if action == "refresh" then
     require("nvim-sidebar").refresh()
@@ -54,6 +63,7 @@ function M.dispatch(action, opts)
 
   handler(items[1], {
     items = items,
+    mode = mode,
     refresh = function()
       require("nvim-sidebar").refresh()
     end,

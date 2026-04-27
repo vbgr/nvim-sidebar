@@ -55,6 +55,16 @@ local function unique_path(target)
   end
 end
 
+local function paste_target(destination, source)
+  local target = path.join(destination, path.basename(source))
+
+  if uv.fs_stat(target) == nil then
+    return target
+  end
+
+  return unique_path(target .. " copy")
+end
+
 local function copy_recursive(source, target)
   local stat = uv.fs_stat(source)
 
@@ -135,6 +145,48 @@ function M.new_directory(item, refresh)
   end)
 end
 
+function M.rename(item, refresh)
+  if item == nil or item.path == nil then
+    return
+  end
+
+  vim.ui.input({
+    prompt = "Rename: ",
+    default = item.name,
+  }, function(input)
+    if input == nil or input == "" then
+      return
+    end
+
+    local target = path.join(path.dirname(item.path), input)
+
+    if target == item.path then
+      return
+    end
+
+    if uv.fs_stat(target) ~= nil then
+      notify.warn("File already exists: " .. target)
+      return
+    end
+
+    local ok, result = pcall(vim.fn.rename, item.path, target)
+
+    if not ok then
+      notify.error(result)
+      return
+    end
+
+    if result ~= 0 then
+      notify.error("Failed to rename: " .. item.path)
+      return
+    end
+
+    if refresh ~= nil then
+      refresh(target)
+    end
+  end)
+end
+
 function M.trash(items)
   local paths = item_paths(items)
 
@@ -193,10 +245,16 @@ function M.paste(item, refresh)
   local destination = parent_dir(item)
 
   for _, source in ipairs(data.paths) do
-    local target = path.join(destination, path.basename(source))
+    local target = paste_target(destination, source)
 
     if data.mode == "cut" then
-      vim.fn.rename(source, target)
+      local ok, result = pcall(vim.fn.rename, source, target)
+
+      if not ok then
+        notify.error(result)
+      elseif result ~= 0 then
+        notify.error("Failed to move: " .. source)
+      end
     else
       local ok, err = copy_recursive(source, target)
 

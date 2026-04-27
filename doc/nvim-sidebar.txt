@@ -170,8 +170,15 @@ Each row contains:
 - modified marker when the buffer is modified
 - file name, or `[No Name]`
 
+If two listed buffers have the same file name, only those duplicated names are
+shown with their parent directory, for example `src/init.lua`.
+
 The buffers source supports opening buffers, locating the previous editor
 buffer, search, and yanking buffer names.
+
+The current editor buffer is highlighted while focus is outside the buffers
+sidebar. When the buffers sidebar is focused, the normal cursor line is used
+instead.
 
 ==============================================================================
 KEYMAPS                                               *nvim-sidebar-keymaps*
@@ -192,6 +199,7 @@ Files source mappings:
   y    Yank file/directory names
   Y    Yank paths relative to getcwd()
   D    Duplicate files/directories
+  R    Rename file/directory
   L    Locate current editor file
   r    Refresh
   q    Close
@@ -220,7 +228,8 @@ OPEN                                                    *nvim-sidebar-open*
 On a directory, open toggles expanded state and refreshes the tree.
 
 On a file, open switches back to the previous editor window and edits the file.
-If the file is already loaded, Neovim opens that file buffer normally.
+If the file is already loaded, Neovim opens that file buffer normally. The
+files sidebar is refreshed so the opened-buffer marker is updated immediately.
 
 COLLAPSE                                            *nvim-sidebar-collapse*
 
@@ -277,7 +286,20 @@ parent directory.
 Copy recursively copies directories. Cut moves paths and clears the plugin
 clipboard after paste.
 
+If the natural paste target already exists, paste uses a unique copy name
+instead of overwriting:
+>
+  {original name} copy
+  {original name} copy 2
+<
+
 Visual selection is supported for copy and cut.
+
+RENAME                                                *nvim-sidebar-rename*
+
+Rename prompts for a new basename and renames the selected file or directory
+inside its current parent directory. If the target already exists, a warning is
+shown and the source is left unchanged.
 
 YANK NAME                                      *nvim-sidebar-yank-name*
 
@@ -300,8 +322,8 @@ The first copy target is:
 
 If that target already exists, numbered names are used:
 >
-  {stem} copy 2{ext}
-  {stem} copy 3{ext}
+  {original name} copy 2
+  {original name} copy 3
 <
 
 Visual selection is supported.
@@ -343,8 +365,8 @@ Default options:
     icons = {
       devicons = true,
       file = "",
-      folder_closed = "+",
-      folder_open = "-",
+      folder_closed = "",
+      folder_open = "",
       modified = "*",
       buffer_open = "o",
       git_modified = "M",
@@ -365,6 +387,7 @@ Default options:
       yank_name = "y",
       yank_path = "Y",
       duplicate = "D",
+      rename = "R",
       locate = "L",
       refresh = "r",
       close = "q",
@@ -380,7 +403,7 @@ Default options:
         "^__pycache__$",
         "^node_modules$",
       },
-      directory_size = "--",
+      directory_size = "-/-",
       directory_type = "Folder",
       full_columns = { "size", "type", "modified" },
       date_format = "%Y-%m-%d %H:%M",

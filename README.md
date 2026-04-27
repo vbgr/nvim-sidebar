@@ -25,8 +25,8 @@ commands, buffer-local mappings, and no visual framework to maintain.
 - Files sidebar rooted at `vim.fn.getcwd()`
 - Buffers sidebar for loaded, listed buffers
 - Full-window file tree with optional metadata columns
-- Search, locate, open, collapse, copy, cut, paste, trash, yank, and duplicate
-  actions for files
+- Search, locate, open, collapse, copy, cut, paste, trash, yank, duplicate, and
+  rename actions for files
 - Search, locate, open, and yank actions for buffers
 - Optional `nvim-web-devicons` integration
 - Optional lualine extension for sidebar statuslines
@@ -105,7 +105,8 @@ sidebar.close()
 
 The buffers source is a flat sidebar list. Each row contains the buffer number,
 an optional file icon, the file name, and a modified marker when applicable.
-The current editor buffer is highlighted.
+Duplicated file names include their parent directory, and the current editor
+buffer is highlighted while focus is outside the buffers sidebar.
 
 Default buffer actions:
 
@@ -141,11 +142,14 @@ Default file actions:
 - `y`: yank basenames
 - `Y`: yank paths relative to `vim.fn.getcwd()`
 - `D`: duplicate selected paths
+- `R`: rename selected path
 - `L`: locate current editor file
 - `r`: refresh
 - `q`: close
 
 Visual mode is supported for trash, copy, cut, yank, and duplicate actions.
+When paste targets an existing path, the pasted item is written to a unique
+`copy` name instead of overwriting the existing file or directory.
 
 ### Full Tree
 
@@ -186,6 +190,7 @@ Common options:
     yank_name = "y",
     yank_path = "Y",
     duplicate = "D",
+    rename = "R",
     locate = "L",
     refresh = "r",
     close = "q",

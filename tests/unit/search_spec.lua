@@ -51,4 +51,20 @@ t.test("search prompt stores input and runs callback", function()
   t.assert_equal(calls, 1)
 end)
 
+t.test("search prompt clears query when input is empty", function()
+  t.reset_plugin()
+  state.search.query = "old"
+
+  local calls = 0
+
+  with_input("", function()
+    search.prompt(function()
+      calls = calls + 1
+    end)
+  end)
+
+  t.assert_equal(state.search.query, "")
+  t.assert_equal(calls, 1)
+end)
+
 t.run_if_direct("tests/unit/search_spec.lua")

@@ -3,6 +3,7 @@ local t = require("tests.helpers")
 local config = require("nvim-sidebar.config")
 local path = require("nvim-sidebar.util.path")
 local sidebar = require("nvim-sidebar")
+local state = require("nvim-sidebar.state")
 
 local function display_end(line, text)
   local _, end_col = line:find(text, 1, true)
@@ -71,6 +72,37 @@ t.test("full tree uses cwd path as local statusline title", function()
     sidebar.open_full_tree()
 
     t.assert_equal(vim.wo.statusline, " " .. vim.fn.fnamemodify(root, ":~"))
+  end)
+end)
+
+t.test("full tree close mapping restores previous editor buffer", function()
+  t.temp_dir("files-full-tree-close", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "README.md"), "hello world")
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "README.md")))
+
+    local previous_bufnr = vim.api.nvim_get_current_buf()
+
+    sidebar.open_full_tree()
+    t.trigger_normal_mapping(1, "q")
+
+    t.assert_equal(vim.api.nvim_get_current_buf(), previous_bufnr)
+    t.assert_equal(state.full.bufnr, nil)
+    t.assert_equal(state.full.winid, nil)
+  end)
+end)
+
+t.test("full tree open mapping opens selected file and clears full tree state", function()
+  t.temp_dir("files-full-tree-open", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "README.md"), "hello world")
+
+    sidebar.open_full_tree()
+    t.trigger_normal_mapping(t.line_by_name("README.md"), "o")
+
+    t.assert_equal(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "README.md")
+    t.assert_equal(state.full.bufnr, nil)
+    t.assert_equal(state.full.winid, nil)
   end)
 end)
 

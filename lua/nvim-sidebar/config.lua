@@ -33,6 +33,7 @@ M.defaults = {
     yank_name = "y",
     yank_path = "Y",
     duplicate = "D",
+    rename = "R",
     locate = "L",
     refresh = "r",
     close = "q",

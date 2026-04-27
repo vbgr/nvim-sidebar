@@ -110,7 +110,6 @@ t.test("buffers view renders listed buffers and modified markers", function()
     vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
     local alpha_bufnr = vim.api.nvim_get_current_buf()
     vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "beta.txt")))
-    local beta_bufnr = vim.api.nvim_get_current_buf()
     vim.api.nvim_buf_set_lines(0, 0, 0, false, {
       "changed",
     })
@@ -125,7 +124,7 @@ t.test("buffers view renders listed buffers and modified markers", function()
     t.assert_contains(rendered, "* beta.txt")
     t.assert_equal(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":~:."), "buffers")
     t.assert_false(t.has_highlight_group(buffers.render(), "NvimSidebarCurrent"))
-    t.assert_equal(current_highlight_lines()[1], line_by_bufnr(beta_bufnr))
+    t.assert_equal(#current_highlight_lines(), 0)
   end)
 end)
 
@@ -184,6 +183,28 @@ t.test("buffers view supports configurable left padding", function()
   end)
 end)
 
+t.test("buffers view disambiguates duplicated file names with parent folder", function()
+  t.temp_dir("buffers-open-duplicate-names", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "left", "init.lua"), "left")
+    t.write_file(path.join(root, "right", "init.lua"), "right")
+    t.write_file(path.join(root, "left", "unique.lua"), "unique")
+
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "left", "init.lua")))
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "right", "init.lua")))
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "left", "unique.lua")))
+
+    sidebar.open("buffers")
+
+    local rendered = t.rendered_text()
+
+    t.assert_contains(rendered, "left/init.lua")
+    t.assert_contains(rendered, "right/init.lua")
+    t.assert_contains(rendered, "unique.lua")
+    t.assert_not_contains(rendered, "left/unique.lua")
+  end)
+end)
+
 t.test("buffers current highlight follows active editor buffer without rerendering", function()
   t.temp_dir("buffers-open-current-highlight", function(root)
     t.reset_plugin()
@@ -200,15 +221,37 @@ t.test("buffers current highlight follows active editor buffer without rerenderi
 
     local before_lines = vim.api.nvim_buf_get_lines(state.sidebar.bufnr, 0, -1, false)
 
-    t.assert_equal(current_highlight_lines()[1], line_by_bufnr(alpha_bufnr))
+    t.assert_equal(#current_highlight_lines(), 0)
 
     vim.api.nvim_set_current_win(state.previous_window())
+
+    t.assert_equal(current_highlight_lines()[1], line_by_bufnr(alpha_bufnr))
+
     vim.cmd("buffer " .. beta_bufnr)
 
     local after_lines = vim.api.nvim_buf_get_lines(state.sidebar.bufnr, 0, -1, false)
 
     t.assert_equal(table.concat(after_lines, "\n"), table.concat(before_lines, "\n"))
     t.assert_equal(current_highlight_lines()[1], line_by_bufnr(beta_bufnr))
+  end)
+end)
+
+t.test("buffers current highlight is cleared when buffers sidebar is focused", function()
+  t.temp_dir("buffers-open-current-highlight-focused", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "alpha.txt"), "alpha")
+
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
+
+    sidebar.open("buffers")
+    vim.api.nvim_set_current_win(state.previous_window())
+
+    t.assert_equal(current_highlight_lines()[1], line_by_bufnr(vim.api.nvim_get_current_buf()))
+
+    vim.api.nvim_set_current_win(state.sidebar.winid)
+    buffers.update_current_highlight()
+
+    t.assert_equal(#current_highlight_lines(), 0)
   end)
 end)
 

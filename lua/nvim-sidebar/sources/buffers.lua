@@ -28,6 +28,36 @@ local function buffer_name(bufnr)
   return vim.fn.fnamemodify(name, ":t")
 end
 
+local function parent_name(buffer_path)
+  if buffer_path == "" then
+    return nil
+  end
+
+  local parent = vim.fn.fnamemodify(buffer_path, ":h:t")
+
+  return parent ~= "" and parent or nil
+end
+
+local function apply_duplicate_labels(buffers)
+  local counts = {}
+
+  for _, item in ipairs(buffers) do
+    counts[item.name] = (counts[item.name] or 0) + 1
+  end
+
+  for _, item in ipairs(buffers) do
+    item.display_name = item.name
+
+    if counts[item.name] > 1 then
+      local parent = parent_name(item.path)
+
+      if parent ~= nil then
+        item.display_name = parent .. "/" .. item.name
+      end
+    end
+  end
+end
+
 local function listed_buffers()
   local buffers = {}
 
@@ -51,6 +81,8 @@ local function listed_buffers()
     end
   end
 
+  apply_duplicate_labels(buffers)
+
   return buffers
 end
 
@@ -73,14 +105,20 @@ function M.render()
     local modified = item.modified and (config.options.icons.modified .. " ") or ""
     local padding = string.rep(" ", config.options.padding_left)
     local buffer_number = buffer_number_text(item.bufnr)
-    local line =
-      string.format("%s%s %s%s%s", padding, buffer_number, icon_with_space, modified, item.name)
+    local line = string.format(
+      "%s%s %s%s%s",
+      padding,
+      buffer_number,
+      icon_with_space,
+      modified,
+      item.display_name
+    )
 
     table.insert(lines, line)
     items[#lines] = {
       source = "buffers",
       bufnr = item.bufnr,
-      name = item.name,
+      name = item.display_name,
       path = item.path,
     }
 
@@ -128,6 +166,10 @@ function M.update_current_highlight(bufnr)
   end
 
   vim.api.nvim_buf_clear_namespace(bufnr, current_ns, 0, -1)
+
+  if vim.api.nvim_get_current_buf() == bufnr then
+    return
+  end
 
   local current_bufnr = state.previous_buffer()
 

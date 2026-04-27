@@ -48,6 +48,37 @@ t.test("files cut and paste moves directories recursively", function()
   end)
 end)
 
+t.test("files cut paste creates unique target when file already exists", function()
+  t.temp_dir("files-cut-paste-collision", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "source", "alpha.txt"), "moved")
+    t.write_file(path.join(root, "target", "alpha.txt"), "existing")
+
+    files.actions.cut({
+      path = path.join(root, "source", "alpha.txt"),
+    }, {
+      items = {
+        {
+          path = path.join(root, "source", "alpha.txt"),
+        },
+      },
+    })
+
+    files.actions.paste({
+      kind = "directory",
+      path = path.join(root, "target"),
+    }, {
+      refresh = function() end,
+    })
+
+    t.assert_file_missing(path.join(root, "source", "alpha.txt"))
+    t.assert_equal(t.read_file(path.join(root, "target", "alpha.txt")), "existing")
+    t.assert_equal(t.read_file(path.join(root, "target", "alpha.txt copy")), "moved")
+    t.assert_equal(state.fstree.clipboard.mode, nil)
+    t.assert_equal(#state.fstree.clipboard.paths, 0)
+  end)
+end)
+
 t.test("files cut and paste moves last file out of directory", function()
   t.temp_dir("files-cut-paste-last-file", function(root)
     t.reset_plugin()
