@@ -3,6 +3,7 @@ local devicons = require("nvim-sidebar.integrations.devicons")
 local fuzzy = require("nvim-sidebar.search.fuzzy")
 local notify = require("nvim-sidebar.util.notify")
 local state = require("nvim-sidebar.state")
+local window = require("nvim-sidebar.ui.window")
 
 local M = {
   name = "buffers",
@@ -354,9 +355,9 @@ function M.actions.locate()
   state.cursor.restore_bufnr = bufnr
 end
 
-function M.actions.open(item)
+local function open_buffer(item)
   if item == nil or not vim.api.nvim_buf_is_valid(item.bufnr) then
-    return
+    return false
   end
 
   local winid = state.previous_window()
@@ -366,6 +367,18 @@ function M.actions.open(item)
   end
 
   vim.api.nvim_set_current_buf(item.bufnr)
+
+  return true
+end
+
+function M.actions.open(item)
+  open_buffer(item)
+end
+
+function M.actions.open_and_close(item)
+  if open_buffer(item) then
+    window.close_sidebar()
+  end
 end
 
 function M.actions.next_buffer()

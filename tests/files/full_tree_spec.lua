@@ -132,4 +132,21 @@ t.test("full tree open mapping opens selected file and clears full tree state", 
   end)
 end)
 
+t.test("full tree open_and_close mapping opens selected file and clears full tree state", function()
+  t.temp_dir("files-full-tree-open-and-close", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "README.md"), "hello world")
+    set_numbered_editor_window()
+
+    sidebar.open_full_tree()
+    t.trigger_normal_mapping(t.line_by_name("README.md"), "<CR>")
+
+    t.assert_equal(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "README.md")
+    assert_numbered_editor_window()
+    t.assert_equal(state.full.bufnr, nil)
+    t.assert_equal(state.full.winid, nil)
+    t.assert_equal(state.full.window_options, nil)
+  end)
+end)
+
 t.run_if_direct("tests/files/full_tree_spec.lua")

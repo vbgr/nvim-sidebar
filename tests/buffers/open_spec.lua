@@ -5,6 +5,7 @@ local config = require("nvim-sidebar.config")
 local path = require("nvim-sidebar.util.path")
 local sidebar = require("nvim-sidebar")
 local state = require("nvim-sidebar.state")
+local window = require("nvim-sidebar.ui.window")
 
 local function with_fake_devicons(icon, group, fn)
   local loaded = package.loaded["nvim-web-devicons"]
@@ -345,6 +346,24 @@ t.test("buffers open action keeps using focused editor window after owner scan",
 
     t.assert_equal(vim.api.nvim_get_current_win(), alpha_winid)
     t.assert_equal(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "beta.txt")
+  end)
+end)
+
+t.test("buffers open_and_close action switches buffer and closes sidebar", function()
+  t.temp_dir("buffers-open-and-close-action", function(root)
+    t.reset_plugin()
+    t.write_file(path.join(root, "alpha.txt"), "alpha")
+    t.write_file(path.join(root, "beta.txt"), "beta")
+
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "alpha.txt")))
+    local alpha_bufnr = vim.api.nvim_get_current_buf()
+    vim.cmd("edit " .. vim.fn.fnameescape(path.join(root, "beta.txt")))
+
+    sidebar.open("buffers")
+    buffers.actions.open_and_close(t.item_by_name("alpha.txt"))
+
+    t.assert_equal(vim.api.nvim_get_current_buf(), alpha_bufnr)
+    t.assert_false(window.is_sidebar_open())
   end)
 end)
 

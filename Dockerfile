@@ -30,13 +30,4 @@ COPY . .
 
 RUN chmod +x run-tests.sh
 
-RUN <<EOF
-set -eux
-nvim --version | head -n 1
-lua5.1 -v
-luarocks-5.1 --version
-command -v trash
-./run-tests.sh
-EOF
-
 CMD ["./run-tests.sh"]

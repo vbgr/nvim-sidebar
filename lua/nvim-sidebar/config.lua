@@ -22,6 +22,7 @@ M.defaults = {
   },
   keymaps = {
     open = "o",
+    open_and_close = "<CR>",
     collapse = "O",
     search = "/",
     clear_search = "<Esc>",

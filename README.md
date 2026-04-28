@@ -111,6 +111,7 @@ buffer is highlighted while focus is outside the buffers sidebar.
 Default buffer actions:
 
 - `o`: open selected buffer
+- `<CR>`: open selected buffer and close the sidebar
 - `<Tab>`: move to next buffer and show it in its editor window
 - `<S-Tab>`: move to previous buffer and show it in its editor window
 - `/`: live fuzzy search buffers
@@ -134,6 +135,7 @@ and directory name. Directories are sorted before files.
 Default file actions:
 
 - `o`: open file or expand/collapse directory
+- `<CR>`: open file and close the sidebar; directories expand/collapse
 - `O`: collapse directory or parent directory
 - `/`: live fuzzy search visible entries
 - `<Esc>`: clear search
@@ -194,6 +196,7 @@ Common options:
 
   keymaps = {
     open = "o",
+    open_and_close = "<CR>",
     collapse = "O",
     search = "/",
     clear_search = "<Esc>",
