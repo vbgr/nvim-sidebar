@@ -182,6 +182,50 @@ t.test("actions dispatch locate falls back to active source", function()
   t.assert_equal(source_name, "files")
 end)
 
+t.test("actions dispatch open_and_close uses source handler", function()
+  t.reset_plugin()
+
+  local called = false
+  local captured_item
+  local captured_mode
+
+  current_buffer_items({
+    [1] = {
+      name = "alpha",
+      source = "files",
+    },
+  })
+
+  restore_after({
+    {
+      table = sources,
+      key = "get",
+      value = function()
+        return {
+          name = "files",
+          actions = {
+            open_and_close = function(item, ctx)
+              called = true
+              captured_item = item
+              captured_mode = ctx.mode
+            end,
+          },
+        }
+      end,
+    },
+  }, function()
+    vim.api.nvim_win_set_cursor(0, {
+      1,
+      0,
+    })
+    actions.dispatch("open_and_close")
+  end)
+
+  t.assert_true(called)
+  t.assert_equal(captured_item.name, "alpha")
+  t.assert_equal(captured_mode, "sidebar")
+end)
+
 t.test("actions dispatch warns when action is unavailable", function()
   t.reset_plugin()
 

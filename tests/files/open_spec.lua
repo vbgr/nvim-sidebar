@@ -6,6 +6,7 @@ local files = require("nvim-sidebar.sources.files")
 local path = require("nvim-sidebar.util.path")
 local sidebar = require("nvim-sidebar")
 local state = require("nvim-sidebar.state")
+local window = require("nvim-sidebar.ui.window")
 
 local function with_fake_devicons(icon, group, fn)
   local loaded = package.loaded["nvim-web-devicons"]
@@ -264,6 +265,38 @@ t.test("files open action refreshes opened marker without stealing focus", funct
     t.assert_equal(vim.api.nvim_get_current_win(), editor_winid)
     t.assert_equal(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "alpha.txt")
     t.assert_contains(sidebar_line("alpha.txt"), " " .. config.options.icons.buffer_open)
+  end)
+end)
+
+t.test("files open_and_close action opens files and closes sidebar", function()
+  t.temp_dir("files-open-and-close-action", function(root)
+    t.open_fixture_tree(root)
+
+    sidebar.open("files")
+
+    files.actions.open_and_close(t.item_by_name("alpha.txt"), {
+      mode = "sidebar",
+      refresh = sidebar.refresh,
+    })
+
+    t.assert_equal(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "alpha.txt")
+    t.assert_false(window.is_sidebar_open())
+  end)
+end)
+
+t.test("files open_and_close action keeps sidebar open for directories", function()
+  t.temp_dir("files-open-and-close-directory", function(root)
+    t.open_fixture_tree(root)
+
+    sidebar.open("files")
+
+    files.actions.open_and_close(t.item_by_name("dir-b"), {
+      mode = "sidebar",
+      refresh = sidebar.refresh,
+    })
+
+    t.assert_true(expand.is_expanded(path.join(root, "dir-b")))
+    t.assert_true(window.is_sidebar_open())
   end)
 end)
 

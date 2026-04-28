@@ -189,6 +189,7 @@ Default mappings are buffer-local to nvim-sidebar buffers.
 Files source mappings:
 >
   o    Open file or expand/collapse directory
+  CR   Open file and close sidebar; directories expand/collapse
   O    Collapse directory or parent directory
   /    Search as you type
   Esc  Clear search
@@ -210,6 +211,7 @@ Files source mappings:
 Buffers source mappings:
 >
   o    Open selected buffer
+  CR   Open selected buffer and close sidebar
   Tab  Move to next buffer and show it in its editor window
   S-Tab
        Move to previous buffer and show it in its editor window
@@ -389,6 +391,7 @@ Default options:
 
     keymaps = {
       open = "o",
+      open_and_close = "<CR>",
       collapse = "O",
       search = "/",
       clear_search = "<Esc>",

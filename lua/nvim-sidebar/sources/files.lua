@@ -308,9 +308,9 @@ function M.actions.locate()
   expand_parent_dirs(root, file_path)
 end
 
-function M.actions.open(item, ctx)
+local function open_item(item, ctx)
   if item == nil then
-    return
+    return false, nil, nil
   end
 
   local mode = action_mode(ctx)
@@ -319,7 +319,7 @@ function M.actions.open(item, ctx)
     expand.toggle(item.path)
     state.cursor.restore_path = item.path
     ctx.refresh()
-    return
+    return true, "directory", mode
   end
 
   if mode == "full" then
@@ -336,6 +336,20 @@ function M.actions.open(item, ctx)
 
   if mode == "sidebar" then
     refresh_sidebar_preserving_current_window(ctx)
+  end
+
+  return true, "file", mode
+end
+
+function M.actions.open(item, ctx)
+  open_item(item, ctx)
+end
+
+function M.actions.open_and_close(item, ctx)
+  local opened, kind, mode = open_item(item, ctx)
+
+  if opened and kind == "file" and mode == "sidebar" then
+    window.close_sidebar()
   end
 end
 

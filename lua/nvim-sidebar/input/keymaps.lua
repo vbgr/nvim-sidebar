@@ -63,6 +63,7 @@ function M.apply(bufnr)
   unmap(bufnr, { "n" }, maps.previous_buffer)
 
   map(bufnr, { "n" }, maps.open, "open")
+  map(bufnr, { "n" }, maps.open_and_close, "open_and_close")
   map(bufnr, { "n" }, maps.collapse, "collapse")
   map(bufnr, { "n" }, maps.search, "search")
   map(bufnr, { "n" }, maps.clear_search, "clear_search")
