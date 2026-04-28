@@ -42,7 +42,14 @@ function M.dispatch(action, opts)
   end
 
   if action == "search" then
-    search.prompt(function()
+    search.start(function()
+      require("nvim-sidebar").refresh()
+    end)
+    return
+  end
+
+  if action == "clear_search" then
+    search.clear(function()
       require("nvim-sidebar").refresh()
     end)
     return

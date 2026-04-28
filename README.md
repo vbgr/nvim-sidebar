@@ -113,7 +113,8 @@ Default buffer actions:
 - `o`: open selected buffer
 - `<Tab>`: move to next buffer and show it in its editor window
 - `<S-Tab>`: move to previous buffer and show it in its editor window
-- `/`: fuzzy search buffers
+- `/`: live fuzzy search buffers
+- `<Esc>`: clear search
 - `y`: yank selected buffer names
 - `L`: locate current editor buffer
 - `r`: refresh
@@ -134,7 +135,8 @@ Default file actions:
 
 - `o`: open file or expand/collapse directory
 - `O`: collapse directory or parent directory
-- `/`: fuzzy search visible entries
+- `/`: live fuzzy search visible entries
+- `<Esc>`: clear search
 - `a`: create file
 - `A`: create directory
 - `d`: trash selected paths
@@ -152,6 +154,17 @@ Default file actions:
 Visual mode is supported for trash, copy, cut, yank, and duplicate actions.
 When paste targets an existing path, the pasted item is written to a unique
 `copy` name instead of overwriting the existing file or directory.
+
+### Search
+
+Search uses Neovim's native `/` command-line UI. Results refresh while you type,
+so pressing Enter is optional and only keeps the current filtered results.
+Pressing `<Esc>` or `<C-c>` while the search command-line is active clears the
+query and restores the unfiltered view. The normal-mode `<Esc>` mapping clears
+an existing search after the command-line has already closed.
+
+File search filters the currently rendered tree. It does not expand collapsed
+directories while searching.
 
 ### Full Tree
 
@@ -183,6 +196,7 @@ Common options:
     open = "o",
     collapse = "O",
     search = "/",
+    clear_search = "<Esc>",
     new_file = "a",
     new_directory = "A",
     trash = "d",

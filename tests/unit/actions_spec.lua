@@ -70,18 +70,18 @@ t.test("actions dispatch close calls sidebar close", function()
   t.assert_equal(calls, 1)
 end)
 
-t.test("actions dispatch search prompts and refreshes after search", function()
+t.test("actions dispatch search starts live search and refreshes", function()
   t.reset_plugin()
 
-  local prompts = 0
+  local starts = 0
   local refreshes = 0
 
   restore_after({
     {
       table = search,
-      key = "prompt",
+      key = "start",
       value = function(callback)
-        prompts = prompts + 1
+        starts = starts + 1
         callback()
       end,
     },
@@ -96,7 +96,37 @@ t.test("actions dispatch search prompts and refreshes after search", function()
     actions.dispatch("search")
   end)
 
-  t.assert_equal(prompts, 1)
+  t.assert_equal(starts, 1)
+  t.assert_equal(refreshes, 1)
+end)
+
+t.test("actions dispatch clear_search clears search and refreshes", function()
+  t.reset_plugin()
+
+  local clears = 0
+  local refreshes = 0
+
+  restore_after({
+    {
+      table = search,
+      key = "clear",
+      value = function(callback)
+        clears = clears + 1
+        callback()
+      end,
+    },
+    {
+      table = sidebar,
+      key = "refresh",
+      value = function()
+        refreshes = refreshes + 1
+      end,
+    },
+  }, function()
+    actions.dispatch("clear_search")
+  end)
+
+  t.assert_equal(clears, 1)
   t.assert_equal(refreshes, 1)
 end)
 

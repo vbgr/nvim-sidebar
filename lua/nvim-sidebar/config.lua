@@ -24,6 +24,7 @@ M.defaults = {
     open = "o",
     collapse = "O",
     search = "/",
+    clear_search = "<Esc>",
     new_file = "a",
     new_directory = "A",
     trash = "d",
