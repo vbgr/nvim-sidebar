@@ -16,11 +16,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check Lua formatting
-        uses: JohnnyMorganz/stylua-action@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
-          args: --check lua tests
+        run: |
+          docker run --rm \
+            -v "$PWD:/workspace" \
+            -w /workspace \
+            johnnymorganz/stylua:2.4.1 \
+            /stylua --check lua tests
 
       - name: Build test image
         run: docker build -t nvim-sidebar-test .

@@ -1,0 +1,13 @@
+return {
+  statsfile = "coverage/luacov.stats.out",
+  reportfile = "coverage/index.html",
+  runreport = false,
+  deletestats = false,
+  include = {
+    "lua/nvim%-sidebar",
+  },
+  exclude = {
+    "tests/",
+    "plugin/",
+  },
+}
