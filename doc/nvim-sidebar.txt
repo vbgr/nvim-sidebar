@@ -31,7 +31,8 @@ The files source can be rendered in two ways:
 The buffers source is rendered in sidebar view only.
 
 The plugin uses |nvim-web-devicons| when available and enabled. If devicons are
-not available, configured fallback icons are used.
+not available, configured fallback icons are used. Unknown file types use the
+devicons default file icon when possible.
 
 The plugin ships a lualine extension named `nvim-sidebar`. Enable it with:
 >
@@ -379,7 +380,7 @@ Default options:
 
     icons = {
       devicons = true,
-      file = "",
+      file = "",
       folder_closed = "",
       folder_open = "",
       modified = "•",

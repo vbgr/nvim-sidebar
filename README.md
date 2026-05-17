@@ -28,7 +28,7 @@ commands, buffer-local mappings, and no visual framework to maintain.
 - Search, locate, open, collapse, copy, cut, paste, trash, yank, duplicate, and
   rename actions for files
 - Search, locate, open, and yank actions for buffers
-- Optional `nvim-web-devicons` integration
+- Optional `nvim-web-devicons` integration with a fallback file icon
 - Optional lualine extension for sidebar statuslines
 - Plain Neovim Lua test suite with Docker coverage support
 
@@ -104,7 +104,7 @@ sidebar.close()
 ## Buffers View
 
 The buffers source is a flat sidebar list. Each row contains the buffer number,
-an optional file icon, the file name, and a modified marker when applicable.
+a file icon, the file name, and a modified marker when applicable.
 Duplicated file names include their parent directory, and the current editor
 buffer is highlighted while focus is outside the buffers sidebar.
 
@@ -128,9 +128,9 @@ Visual mode is supported for buffer-name yanking.
 The files source renders a hierarchical tree rooted at the current working
 directory.
 
-File rows include an optional icon, file name, opened-buffer marker, and git
-status marker. Directory rows include the configured expanded/collapsed marker
-and directory name. Directories are sorted before files.
+File rows include a file icon, file name, opened-buffer marker, and git status
+marker. Directory rows include the configured expanded/collapsed marker and
+directory name. Directories are sorted before files.
 
 Default file actions:
 
@@ -193,6 +193,18 @@ Common options:
   padding_left = 2,
   default_source = "files",
   sources = { "files", "buffers" },
+
+  icons = {
+    devicons = true,
+    file = "",
+    folder_closed = "",
+    folder_open = "",
+    modified = "•",
+    buffer_open = "◦",
+    git_modified = "•",
+    git_added = "✦",
+    git_untracked = "◇",
+  },
 
   keymaps = {
     open = "o",

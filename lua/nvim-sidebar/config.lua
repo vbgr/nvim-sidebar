@@ -11,7 +11,7 @@ M.defaults = {
   },
   icons = {
     devicons = true,
-    file = "",
+    file = "",
     folder_closed = "",
     folder_open = "",
     modified = "•",

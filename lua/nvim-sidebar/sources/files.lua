@@ -78,8 +78,6 @@ local function sidebar_line(node)
   if node.kind == "directory" then
     marker = node.expanded and config.options.icons.folder_open
       or config.options.icons.folder_closed
-  else
-    marker = config.options.icons.file
   end
 
   local open_marker = node.open_buffer and (" " .. config.options.icons.buffer_open) or ""
@@ -96,7 +94,7 @@ local function sidebar_icon_columns(node)
   local prefix = string.rep(
     " ",
     config.options.padding_left + node.depth * config.options.tree.indent_width
-  ) .. config.options.icons.file .. " "
+  ) .. " "
   local col_start = #prefix
 
   return col_start, col_start + #node.icon

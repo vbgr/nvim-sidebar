@@ -155,7 +155,11 @@ t.test("buffers view supports configurable left padding", function()
 
     t.assert_contains(
       line,
-      "    " .. string.format("%3d", vim.api.nvim_get_current_buf()) .. " alpha.txt"
+      "    "
+        .. string.format("%3d", vim.api.nvim_get_current_buf())
+        .. " "
+        .. config.options.icons.file
+        .. " alpha.txt"
     )
   end)
 end)

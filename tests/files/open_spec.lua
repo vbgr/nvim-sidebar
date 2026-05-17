@@ -128,7 +128,7 @@ t.test("files view supports configurable left padding", function()
       mode = "sidebar",
     })
 
-    t.assert_equal(result.lines[1], "     alpha.txt")
+    t.assert_equal(result.lines[1], "     " .. config.options.icons.file .. " alpha.txt")
   end)
 end)
 
