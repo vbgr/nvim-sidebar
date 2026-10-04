@@ -174,8 +174,7 @@ local function sidebar_line(node)
   local icon = node.icon
 
   if node.kind == "directory" then
-    icon = node.expanded and config.options.icons.folder_open
-      or config.options.icons.folder_closed
+    icon = node.expanded and config.options.icons.folder_open or config.options.icons.folder_closed
   end
 
   local open_marker = node.open_buffer and (" " .. config.options.icons.buffer_open) or ""
