@@ -70,36 +70,6 @@ local function git_highlight(status)
   return nil, nil
 end
 
-local function sidebar_line(node)
-  local indent =
-    string.rep(" ", config.options.padding_left + node.depth * config.options.tree.indent_width)
-  local marker = ""
-
-  if node.kind == "directory" then
-    marker = node.expanded and config.options.icons.folder_open
-      or config.options.icons.folder_closed
-  end
-
-  local open_marker = node.open_buffer and (" " .. config.options.icons.buffer_open) or ""
-  local icon = node.icon ~= "" and (node.icon .. " ") or ""
-
-  return indent .. marker .. " " .. icon .. node.name .. open_marker
-end
-
-local function sidebar_icon_columns(node)
-  if node.icon == "" then
-    return nil, nil
-  end
-
-  local prefix = string.rep(
-    " ",
-    config.options.padding_left + node.depth * config.options.tree.indent_width
-  ) .. " "
-  local col_start = #prefix
-
-  return col_start, col_start + #node.icon
-end
-
 local function pad_left(value, width)
   local padding = width - vim.fn.strdisplaywidth(value)
 
@@ -118,6 +88,115 @@ local function pad_right(value, width)
   end
 
   return value .. string.rep(" ", padding)
+end
+
+local MIN_GUIDE_WIDTH = 3
+
+-- Width of one tree level. Guides need room for a connector, a stroke and a
+-- gap before the chevron, so they use at least MIN_GUIDE_WIDTH cells.
+local function level_width()
+  local tree = config.options.tree
+
+  if tree.indent_markers then
+    return math.max(tree.indent_width, MIN_GUIDE_WIDTH)
+  end
+
+  return tree.indent_width
+end
+
+local function guides_enabled()
+  return config.options.tree.indent_markers and state.search.query == ""
+end
+
+local function chevron_slot_width()
+  local icons = config.options.icons
+
+  return math.max(vim.fn.strdisplaywidth(icons.expanded), vim.fn.strdisplaywidth(icons.collapsed))
+end
+
+local function chevron_glyph(node)
+  local icons = config.options.icons
+
+  return node.expanded and icons.expanded or icons.collapsed
+end
+
+-- Guide cells for `node`, each level_width() cells wide. Nodes at depth 0 have
+-- no connector, so a node at depth d gets d cells: d - 1 ancestor cells (a
+-- vertical bar while that ancestor has later siblings) plus its own connector.
+-- A connector's first glyph sits in the same column as its parent's chevron.
+-- Directory connectors end with a one-cell gap before the chevron; file
+-- connectors run through the empty chevron slot up to the icon.
+local function guide_prefix(node)
+  local width = level_width()
+  local cells = {}
+
+  for level = 1, node.depth - 1 do
+    local blank = node.ancestors_last[level + 1]
+
+    table.insert(cells, blank and string.rep(" ", width) or "│" .. string.rep(" ", width - 1))
+  end
+
+  if node.depth > 0 then
+    local glyph = node.is_last and "└" or "├"
+
+    if node.kind == "directory" then
+      table.insert(cells, glyph .. string.rep("─", width - 2) .. " ")
+    else
+      table.insert(cells, glyph .. string.rep("─", width - 1 + chevron_slot_width()))
+    end
+  end
+
+  return table.concat(cells)
+end
+
+-- Builds the left part of a row. Byte ranges are 0-based and end-exclusive;
+-- `guides` and `chevron` are nil when nothing is drawn there.
+local function sidebar_line(node)
+  local padding = string.rep(" ", config.options.padding_left)
+  local drawn = guides_enabled() and node.depth > 0
+  local guides = drawn and guide_prefix(node) or string.rep(" ", node.depth * level_width())
+  local slot = ""
+  local chevron = nil
+
+  if node.kind == "directory" then
+    local glyph = chevron_glyph(node)
+
+    slot = pad_right(glyph, chevron_slot_width())
+    chevron = {
+      #padding + #guides,
+      #padding + #guides + #glyph,
+    }
+  elseif not drawn then
+    slot = string.rep(" ", chevron_slot_width())
+  end
+
+  local prefix = padding .. guides .. slot .. " "
+  local icon = node.icon
+
+  if node.kind == "directory" then
+    icon = node.expanded and config.options.icons.folder_open or config.options.icons.folder_closed
+  end
+
+  local open_marker = node.open_buffer and (" " .. config.options.icons.buffer_open) or ""
+  local icon_text = icon ~= "" and (icon .. " ") or ""
+
+  return {
+    text = prefix .. icon_text .. node.name .. open_marker,
+    guides = drawn and {
+      #padding,
+      #padding + #guides,
+    } or nil,
+    chevron = chevron,
+    icon_start = #prefix,
+  }
+end
+
+local function icon_columns(node, icon_start)
+  if node.icon == "" then
+    return nil, nil
+  end
+
+  return icon_start, icon_start + #node.icon
 end
 
 local function full_column_value(node, column)
@@ -151,7 +230,7 @@ local function full_column_widths(nodes)
   return widths
 end
 
-local function full_line(node, widths)
+local function full_line(left, node, widths)
   local columns = {}
 
   for _, column in ipairs(config.options.tree.full_columns) do
@@ -164,7 +243,6 @@ local function full_line(node, widths)
     end
   end
 
-  local left = sidebar_line(node)
   local right = table.concat(columns, "  ")
   local width = vim.api.nvim_win_get_width(0)
   local git_marker_margin = 4
@@ -227,9 +305,11 @@ function M.render(ctx)
 
   for _, node in ipairs(nodes) do
     if include_node(node) then
+      local row = sidebar_line(node)
+
       table.insert(
         lines,
-        ctx.mode == "full" and full_line(node, column_widths) or sidebar_line(node)
+        ctx.mode == "full" and full_line(row.text, node, column_widths) or row.text
       )
 
       items[#lines] = {
@@ -244,10 +324,20 @@ function M.render(ctx)
         table.insert(highlights, {
           line = #lines,
           group = "NvimSidebarDirectory",
+          col_start = row.icon_start,
         })
       end
 
-      local icon_col_start, icon_col_end = sidebar_icon_columns(node)
+      for _, range in pairs({ row.guides, row.chevron }) do
+        table.insert(highlights, {
+          line = #lines,
+          group = "NvimSidebarIndent",
+          col_start = range[1],
+          col_end = range[2],
+        })
+      end
+
+      local icon_col_start, icon_col_end = icon_columns(node, row.icon_start)
 
       if icon_col_start ~= nil then
         table.insert(highlights, {

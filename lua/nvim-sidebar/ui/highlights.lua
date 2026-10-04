@@ -9,6 +9,10 @@ function M.setup()
     link = "Directory",
     default = true,
   })
+  vim.api.nvim_set_hl(0, "NvimSidebarIndent", {
+    link = "NonText",
+    default = true,
+  })
   vim.api.nvim_set_hl(0, "NvimSidebarModified", {
     link = "WarningMsg",
     default = true,

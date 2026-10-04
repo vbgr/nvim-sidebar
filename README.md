@@ -199,6 +199,8 @@ Common options:
     file = "",
     folder_closed = "",
     folder_open = "",
+    expanded = "",
+    collapsed = "",
     modified = "•",
     buffer_open = "◦",
     git_modified = "•",
@@ -252,6 +254,41 @@ Common options:
   trash_cmd = nil,
 }
 ```
+
+### Tree Guides
+
+Directories show a `▾` / `▸` chevron before the folder icon. Set
+`tree.indent_markers = true` to also draw `tree`-style connector lines:
+
+```
+  ▾  src
+  ├─ ▾  lua
+  │  └───  a.lua
+  ├─ ▾  tests
+  │  ├───  a_spec.lua
+  │  └───  b_spec.lua
+  └───  README.md
+```
+
+```lua
+require("nvim-sidebar").setup({
+  icons = { expanded = "", collapsed = "" },
+  tree = { indent_markers = true, indent_width = 2 },
+})
+```
+
+Guides and chevrons are drawn in the `NvimSidebarIndent` highlight group
+(linked to `NonText`), using light box-drawing characters. Each connector starts
+directly under its parent's chevron. Override the group to make them fainter or
+stronger:
+
+```lua
+vim.api.nvim_set_hl(0, "NvimSidebarIndent", { link = "Comment" })
+```
+
+Guides are hidden while a search is active. With `indent_markers` on, each level
+is at least 3 cells wide so there is room for the connector and a gap before the
+chevron. Line thickness depends on your terminal font.
 
 ### Excluding Files
 

@@ -28,8 +28,10 @@ local function open_buffer_paths()
   return paths
 end
 
-local function collect(nodes, root, dir, depth, open_buffers, git_status)
-  for _, entry in ipairs(scanner.scan(dir)) do
+local function collect(nodes, root, dir, depth, open_buffers, git_status, ancestors_last)
+  local entries = scanner.scan(dir)
+
+  for index, entry in ipairs(entries) do
     local is_directory = entry.kind == "directory"
     local icon, icon_highlight = file_icon(entry)
     local relative_path = path.relative(root, entry.path)
@@ -41,6 +43,8 @@ local function collect(nodes, root, dir, depth, open_buffers, git_status)
       parent = dir,
       relative_path = relative_path,
       depth = depth,
+      is_last = index == #entries,
+      ancestors_last = ancestors_last,
       expanded = is_directory and expand.is_expanded(entry.path) or false,
       open_buffer = open_buffers[entry.path] or false,
       git_status = git.for_path(git_status, entry.path),
@@ -54,7 +58,10 @@ local function collect(nodes, root, dir, depth, open_buffers, git_status)
     table.insert(nodes, node)
 
     if is_directory and node.expanded then
-      collect(nodes, root, entry.path, depth + 1, open_buffers, git_status)
+      local nested_ancestors_last = vim.list_extend({}, ancestors_last)
+
+      table.insert(nested_ancestors_last, node.is_last)
+      collect(nodes, root, entry.path, depth + 1, open_buffers, git_status, nested_ancestors_last)
     end
   end
 end
@@ -64,7 +71,7 @@ function M.visible(root, opts)
 
   local nodes = {}
 
-  collect(nodes, root, root, 0, open_buffer_paths(), opts.git)
+  collect(nodes, root, root, 0, open_buffer_paths(), opts.git, {})
 
   return nodes
 end

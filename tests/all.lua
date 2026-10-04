@@ -31,6 +31,7 @@ require("tests.files.trash_spec")
 require("tests.files.duplicate_spec")
 require("tests.files.rename_spec")
 require("tests.files.full_tree_spec")
+require("tests.files.tree_guides_spec")
 require("tests.files.git_spec")
 require("tests.files.last_window_spec")
 

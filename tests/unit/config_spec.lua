@@ -106,4 +106,30 @@ t.test("config accepts custom exclude patterns", function()
   t.assert_equal(options.tree.exclude_patterns[2], "%.log$")
 end)
 
+t.test("config defaults enable chevrons and keep indent guides opt-in", function()
+  local options = config.setup()
+
+  t.assert_equal(type(options.icons.expanded), "string")
+  t.assert_equal(type(options.icons.collapsed), "string")
+  t.assert_false(options.tree.indent_markers)
+end)
+
+t.test("config rejects invalid chevron icons and indent_markers", function()
+  t.assert_false(pcall(config.setup, {
+    icons = {
+      expanded = 1,
+    },
+  }))
+  t.assert_false(pcall(config.setup, {
+    icons = {
+      collapsed = false,
+    },
+  }))
+  t.assert_false(pcall(config.setup, {
+    tree = {
+      indent_markers = "yes",
+    },
+  }))
+end)
+
 t.run_if_direct("tests/unit/config_spec.lua")
