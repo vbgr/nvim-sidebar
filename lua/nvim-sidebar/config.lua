@@ -14,6 +14,8 @@ M.defaults = {
     file = "",
     folder_closed = "",
     folder_open = "",
+    expanded = "",
+    collapsed = "",
     modified = "•",
     buffer_open = "◦",
     git_modified = "•",
@@ -96,6 +98,18 @@ local function validate_exclude_patterns(patterns)
   end
 end
 
+local function validate_tree_markers(opts)
+  for _, name in ipairs({ "expanded", "collapsed" }) do
+    if type(opts.icons[name]) ~= "string" then
+      error("nvim-sidebar: icons." .. name .. " must be a string", 3)
+    end
+  end
+
+  if type(opts.tree.indent_markers) ~= "boolean" then
+    error("nvim-sidebar: tree.indent_markers must be a boolean", 3)
+  end
+end
+
 local function validate_options(opts)
   if opts.side ~= "left" and opts.side ~= "right" then
     error("nvim-sidebar: side must be 'left' or 'right'", 3)
@@ -120,6 +134,7 @@ local function validate_options(opts)
   end
 
   validate_exclude_patterns(opts.tree.exclude_patterns)
+  validate_tree_markers(opts)
 end
 
 function M.setup(opts)

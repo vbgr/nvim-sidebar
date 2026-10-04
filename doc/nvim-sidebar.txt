@@ -383,6 +383,8 @@ Default options:
       file = "",
       folder_closed = "",
       folder_open = "",
+      expanded = "",
+      collapsed = "",
       modified = "•",
       buffer_open = "◦",
       git_modified = "•",
@@ -435,6 +437,22 @@ Default options:
 
     trash_cmd = nil,
   }
+<
+
+                                                        *nvim-sidebar-guides*
+Directories show `icons.expanded` / `icons.collapsed` chevrons before the
+folder icon. Set `tree.indent_markers = true` to draw `tree`-style connector
+lines (`├─`, `└─`, `│`), each starting directly under its parent's chevron and
+running up to the file icon. Guides and chevrons use the `NvimSidebarIndent`
+highlight group (linked to `NonText`). Guides are hidden while a search is
+active. With `indent_markers` on, each level is at least 3 cells wide.
+
+Example:
+>
+  require("nvim-sidebar").setup({
+    tree = { indent_markers = true },
+  })
+  vim.api.nvim_set_hl(0, "NvimSidebarIndent", { link = "Comment" })
 <
 
                                                         *nvim-sidebar-exclude*

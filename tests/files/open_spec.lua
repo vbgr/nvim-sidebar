@@ -111,8 +111,8 @@ t.test("files view separates file icons from names and highlights icons", functi
         mode = "sidebar",
       })
 
-      t.assert_equal(result.lines[1], "   I alpha.txt")
-      t.assert_true(has_highlight(result, "DevIconTxt", 1, 3, 4))
+      t.assert_equal(result.lines[1], "    I alpha.txt")
+      t.assert_true(has_highlight(result, "DevIconTxt", 1, 4, 5))
     end)
   end)
 end)
@@ -128,7 +128,7 @@ t.test("files view supports configurable left padding", function()
       mode = "sidebar",
     })
 
-    t.assert_equal(result.lines[1], "     " .. config.options.icons.file .. " alpha.txt")
+    t.assert_equal(result.lines[1], "      " .. config.options.icons.file .. " alpha.txt")
   end)
 end)
 
